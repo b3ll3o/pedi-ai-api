@@ -1,8 +1,8 @@
-import { NotFoundException } from '@nestjs/common';
-import { IUsuariosRepository } from '../../../domain/interfaces/usuarios-repository.interface';
+import { NotFoundException, Inject } from '@nestjs/common';
+import { IUsuariosRepository, IUSUARIOS_REPOSITORY } from '../../../domain/interfaces/usuarios-repository.interface';
 
 export class ListarUsuarioPorEmailUseCase {
-  constructor(private readonly usuariosRepository: IUsuariosRepository) {}
+  constructor(@Inject(IUSUARIOS_REPOSITORY) private readonly usuariosRepository: IUsuariosRepository) {}
 
   async execute(email: string) {
     const usuario = await this.usuariosRepository.findByEmail(email);

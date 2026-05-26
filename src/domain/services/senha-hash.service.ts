@@ -2,6 +2,8 @@ import * as bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;
 
+export const ISENHA_HASH_SERVICE = 'ISENHA_HASH_SERVICE';
+
 export interface ISenhaHashService {
   hash(senha: string): Promise<string>;
   compare(senha: string, hash: string): Promise<boolean>;

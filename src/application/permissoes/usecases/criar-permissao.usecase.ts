@@ -1,9 +1,9 @@
-import { ConflictException } from '@nestjs/common';
-import { IPermissoesRepository } from '../../../domain/interfaces/permissoes-repository.interface';
+import { ConflictException, Inject } from '@nestjs/common';
+import { IPermissoesRepository, IPERMISSOES_REPOSITORY } from '../../../domain/interfaces/permissoes-repository.interface';
 import { CriarPermissaoParams } from '../../../domain/entities/permissao.entity';
 
 export class CriarPermissaoUseCase {
-  constructor(private readonly permissoesRepository: IPermissoesRepository) {}
+  constructor(@Inject(IPERMISSOES_REPOSITORY) private readonly permissoesRepository: IPermissoesRepository) {}
 
   async execute(data: CriarPermissaoParams) {
     const permissaoExistente = await this.permissoesRepository.findByNomeOrChave(

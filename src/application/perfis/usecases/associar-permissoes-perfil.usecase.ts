@@ -1,8 +1,8 @@
-import { NotFoundException } from '@nestjs/common';
-import { IPerfisRepository } from '../../../domain/interfaces/perfis-repository.interface';
+import { NotFoundException, Inject } from '@nestjs/common';
+import { IPerfisRepository, IPERFIS_REPOSITORY } from '../../../domain/interfaces/perfis-repository.interface';
 
 export class AssociarPermissoesPerfilUseCase {
-  constructor(private readonly perfisRepository: IPerfisRepository) {}
+  constructor(@Inject(IPERFIS_REPOSITORY) private readonly perfisRepository: IPerfisRepository) {}
 
   async execute(id: string, permissoesIds: string[]) {
     const perfil = await this.perfisRepository.findById(id);

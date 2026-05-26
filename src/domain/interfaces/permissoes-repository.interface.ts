@@ -1,5 +1,7 @@
 import { Permissao, CriarPermissaoParams, AtualizarPermissaoParams } from '../entities/permissao.entity';
 
+export const IPERMISSOES_REPOSITORY = 'IPERMISSOES_REPOSITORY';
+
 export interface IPermissoesRepository {
   findById(id: string): Promise<Permissao | null>;
   findByNomeOrChave(nome: string, chave: string): Promise<Permissao | null>;

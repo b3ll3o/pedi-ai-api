@@ -1,6 +1,8 @@
 import { Perfil, CriarPerfilParams, AtualizarPerfilParams } from '../entities/perfil.entity';
 import { Permissao } from '../entities/permissao.entity';
 
+export const IPERFIS_REPOSITORY = 'IPERFIS_REPOSITORY';
+
 export interface IPerfisRepository {
   findById(id: string): Promise<Perfil | null>;
   findByNome(nome: string): Promise<Perfil | null>;

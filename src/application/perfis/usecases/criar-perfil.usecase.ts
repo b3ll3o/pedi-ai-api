@@ -1,9 +1,9 @@
-import { ConflictException } from '@nestjs/common';
-import { IPerfisRepository } from '../../../domain/interfaces/perfis-repository.interface';
+import { ConflictException, Inject } from '@nestjs/common';
+import { IPerfisRepository, IPERFIS_REPOSITORY } from '../../../domain/interfaces/perfis-repository.interface';
 import { CriarPerfilParams } from '../../../domain/entities/perfil.entity';
 
 export class CriarPerfilUseCase {
-  constructor(private readonly perfisRepository: IPerfisRepository) {}
+  constructor(@Inject(IPERFIS_REPOSITORY) private readonly perfisRepository: IPerfisRepository) {}
 
   async execute(data: CriarPerfilParams) {
     const perfilExistente = await this.perfisRepository.findByNome(data.nome);

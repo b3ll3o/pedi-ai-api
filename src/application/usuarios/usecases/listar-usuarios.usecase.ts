@@ -1,7 +1,8 @@
-import { IUsuariosRepository } from '../../../domain/interfaces/usuarios-repository.interface';
+import { Inject } from '@nestjs/common';
+import { IUsuariosRepository, IUSUARIOS_REPOSITORY } from '../../../domain/interfaces/usuarios-repository.interface';
 
 export class ListarUsuariosUseCase {
-  constructor(private readonly usuariosRepository: IUsuariosRepository) {}
+  constructor(@Inject(IUSUARIOS_REPOSITORY) private readonly usuariosRepository: IUsuariosRepository) {}
 
   async execute() {
     const usuarios = await this.usuariosRepository.findAll();

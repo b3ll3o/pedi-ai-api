@@ -1,7 +1,8 @@
-import { IPerfisRepository } from '../../../domain/interfaces/perfis-repository.interface';
+import { Inject } from '@nestjs/common';
+import { IPerfisRepository, IPERFIS_REPOSITORY } from '../../../domain/interfaces/perfis-repository.interface';
 
 export class ListarPerfisUseCase {
-  constructor(private readonly perfisRepository: IPerfisRepository) {}
+  constructor(@Inject(IPERFIS_REPOSITORY) private readonly perfisRepository: IPerfisRepository) {}
 
   async execute() {
     return this.perfisRepository.findAll();

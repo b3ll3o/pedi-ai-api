@@ -1,12 +1,12 @@
-import { NotFoundException } from '@nestjs/common';
-import { IUsuariosRepository } from '../../../domain/interfaces/usuarios-repository.interface';
-import { ISenhaHashService } from '../../../domain/services/senha-hash.service';
+import { NotFoundException, Inject } from '@nestjs/common';
+import { IUsuariosRepository, IUSUARIOS_REPOSITORY } from '../../../domain/interfaces/usuarios-repository.interface';
+import { ISenhaHashService, ISENHA_HASH_SERVICE } from '../../../domain/services/senha-hash.service';
 import { AtualizarUsuarioParams } from '../../../domain/entities/usuario.entity';
 
 export class AtualizarUsuarioUseCase {
   constructor(
-    private readonly usuariosRepository: IUsuariosRepository,
-    private readonly senhaHashService: ISenhaHashService,
+    @Inject(IUSUARIOS_REPOSITORY) private readonly usuariosRepository: IUsuariosRepository,
+    @Inject(ISENHA_HASH_SERVICE) private readonly senhaHashService: ISenhaHashService,
   ) {}
 
   async execute(id: string, data: AtualizarUsuarioParams) {

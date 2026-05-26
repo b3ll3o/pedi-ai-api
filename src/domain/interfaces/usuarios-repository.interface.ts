@@ -1,5 +1,7 @@
 import { Usuario, CriarUsuarioParams, AtualizarUsuarioParams } from '../entities/usuario.entity';
 
+export const IUSUARIOS_REPOSITORY = 'IUSUARIOS_REPOSITORY';
+
 export interface IUsuariosRepository {
   findById(id: string): Promise<Usuario | null>;
   findByEmail(email: string): Promise<Usuario | null>;

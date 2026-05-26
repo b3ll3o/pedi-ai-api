@@ -1,12 +1,12 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { IUsuariosRepository } from '../../../domain/interfaces/usuarios-repository.interface';
-import { ISenhaHashService } from '../../../domain/services/senha-hash.service';
+import { ConflictException, Inject } from '@nestjs/common';
+import { IUsuariosRepository, IUSUARIOS_REPOSITORY } from '../../../domain/interfaces/usuarios-repository.interface';
+import { ISenhaHashService, ISENHA_HASH_SERVICE } from '../../../domain/services/senha-hash.service';
 import { CriarUsuarioParams } from '../../../domain/entities/usuario.entity';
 
 export class CriarUsuarioUseCase {
   constructor(
-    private readonly usuariosRepository: IUsuariosRepository,
-    private readonly senhaHashService: ISenhaHashService,
+    @Inject(IUSUARIOS_REPOSITORY) private readonly usuariosRepository: IUsuariosRepository,
+    @Inject(ISENHA_HASH_SERVICE) private readonly senhaHashService: ISenhaHashService,
   ) {}
 
   async execute(data: CriarUsuarioParams) {
