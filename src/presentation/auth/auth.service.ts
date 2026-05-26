@@ -18,7 +18,8 @@ export class AuthService {
 
   constructor(
     @Inject(IUSUARIOS_REPOSITORY) private readonly usuariosRepository: IUsuariosRepository,
-    @Inject(IREFRESH_TOKEN_REPOSITORY) private readonly refreshTokenRepository: IRefreshTokenRepository,
+    @Inject(IREFRESH_TOKEN_REPOSITORY)
+    private readonly refreshTokenRepository: IRefreshTokenRepository,
     @Inject(ISENHA_HASH_SERVICE) private readonly senhaHashService: ISenhaHashService,
     private readonly jwtService: JwtService,
   ) {}
