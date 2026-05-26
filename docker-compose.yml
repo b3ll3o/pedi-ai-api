@@ -16,10 +16,17 @@ services:
       PORT: "3001"
       HOST: "0.0.0.0"
       NODE_ENV: production
-      ALLOWED_ORIGINS: "http://andreazzi.tech,http://localhost:3000,http://localhost:3001,http://web:3000"
+      ALLOWED_ORIGINS: "http://andreazzi.tech,http://localhost:3000,http://localhost:3001,http://web:3000,http://api:3001"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:3001/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - pedinet
+
+networks:
+  pedinet:
+    name: pedinet
+    external: true
