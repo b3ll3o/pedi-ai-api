@@ -88,7 +88,8 @@ jobs:
 
             cd /root/pedi-ai-api
 
-            # Limpar arquivos não rastreados que podem conflitar
+            # Reset + clean para garantir estado limpo
+            git reset --hard origin/main
             git clean -fd
 
             # Pull latest changes
