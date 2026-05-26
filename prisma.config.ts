@@ -3,7 +3,7 @@ import { defineConfig } from "prisma/config";
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: process.env.DATABASE_URL || "postgresql://admin:admin@187.77.204.108:5432/e2e_api?schema=public",
+    url: process.env.DATABASE_URL,
   },
   migrations: {
     path: "prisma/migrations",
