@@ -16,7 +16,11 @@ import { AtualizarPerfilUseCase } from '../../../application/perfis/usecases/atu
 import { DeletarPerfilUseCase } from '../../../application/perfis/usecases/deletar-perfil.usecase';
 import { AssociarPermissoesPerfilUseCase } from '../../../application/perfis/usecases/associar-permissoes-perfil.usecase';
 import { DesassociarPermissaoPerfilUseCase } from '../../../application/perfis/usecases/desassociar-permissao-perfil.usecase';
-import { CriarPerfilDto, AtualizarPerfilDto, AssociarPermissoesDto } from '../../../application/perfis/dto/perfil.dto';
+import {
+  CriarPerfilDto,
+  AtualizarPerfilDto,
+  AssociarPermissoesDto,
+} from '../../../application/perfis/dto/perfil.dto';
 
 @Controller('perfis')
 export class PerfisController {
@@ -46,10 +50,7 @@ export class PerfisController {
   }
 
   @Patch(':id')
-  async atualizar(
-    @Param('id') id: string,
-    @Body() atualizarPerfilDto: AtualizarPerfilDto,
-  ) {
+  async atualizar(@Param('id') id: string, @Body() atualizarPerfilDto: AtualizarPerfilDto) {
     return this.atualizarPerfilUseCase.execute(id, atualizarPerfilDto);
   }
 
@@ -69,10 +70,7 @@ export class PerfisController {
 
   @Delete(':id/permissoes/:permissaoId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async desassociarPermissao(
-    @Param('id') id: string,
-    @Param('permissaoId') permissaoId: string,
-  ) {
+  async desassociarPermissao(@Param('id') id: string, @Param('permissaoId') permissaoId: string) {
     return this.desassociarPermissaoPerfilUseCase.execute(id, permissaoId);
   }
 }

@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { IPermissoesRepository } from '../../../../domain/interfaces/permissoes-repository.interface';
-import { Permissao, CriarPermissaoParams, AtualizarPermissaoParams } from '../../../../domain/entities/permissao.entity';
+import {
+  Permissao,
+  CriarPermissaoParams,
+  AtualizarPermissaoParams,
+} from '../../../../domain/entities/permissao.entity';
 
 @Injectable()
 export class PermissoesRepositoryImpl implements IPermissoesRepository {

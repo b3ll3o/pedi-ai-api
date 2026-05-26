@@ -1,8 +1,13 @@
 import { NotFoundException, Inject } from '@nestjs/common';
-import { IPermissoesRepository, IPERMISSOES_REPOSITORY } from '../../../domain/interfaces/permissoes-repository.interface';
+import {
+  IPermissoesRepository,
+  IPERMISSOES_REPOSITORY,
+} from '../../../domain/interfaces/permissoes-repository.interface';
 
 export class ListarPermissaoPorIdUseCase {
-  constructor(@Inject(IPERMISSOES_REPOSITORY) private readonly permissoesRepository: IPermissoesRepository) {}
+  constructor(
+    @Inject(IPERMISSOES_REPOSITORY) private readonly permissoesRepository: IPermissoesRepository,
+  ) {}
 
   async execute(id: string) {
     const permissao = await this.permissoesRepository.findById(id);

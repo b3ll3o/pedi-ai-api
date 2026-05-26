@@ -12,7 +12,7 @@ export class PrismaHealthIndicator extends HealthIndicator {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return this.getStatus(key, true);
-    } catch (error) {
+    } catch (_error) {
       throw new HealthCheckError(
         'Prisma check failed',
         this.getStatus(key, false, { message: 'Falha na conexão com banco' }),

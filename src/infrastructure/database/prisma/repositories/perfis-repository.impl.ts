@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { IPerfisRepository } from '../../../../domain/interfaces/perfis-repository.interface';
-import { Perfil, CriarPerfilParams, AtualizarPerfilParams } from '../../../../domain/entities/perfil.entity';
+import {
+  Perfil,
+  CriarPerfilParams,
+  AtualizarPerfilParams,
+} from '../../../../domain/entities/perfil.entity';
 import { Permissao } from '../../../../domain/entities/permissao.entity';
 
 @Injectable()

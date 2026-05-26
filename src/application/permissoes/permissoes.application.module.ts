@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { InfrastructureModule } from '../../infrastructure/database/infrastructure.module';
-import { IPermissoesRepository, IPERMISSOES_REPOSITORY } from '../../domain/interfaces/permissoes-repository.interface';
+import { IPERMISSOES_REPOSITORY } from '../../domain/interfaces/permissoes-repository.interface';
 import { PermissoesRepositoryImpl } from '../../infrastructure/database/prisma/repositories/permissoes-repository.impl';
 import { CriarPermissaoUseCase } from './usecases/criar-permissao.usecase';
 import { ListarPermissoesUseCase } from './usecases/listar-permissoes.usecase';
@@ -21,6 +21,12 @@ import { PermissoesController } from '../../presentation/permissoes/controllers/
     PermissoesController,
   ],
   controllers: [PermissoesController],
-  exports: [CriarPermissaoUseCase, ListarPermissoesUseCase, ListarPermissaoPorIdUseCase, AtualizarPermissaoUseCase, DeletarPermissaoUseCase],
+  exports: [
+    CriarPermissaoUseCase,
+    ListarPermissoesUseCase,
+    ListarPermissaoPorIdUseCase,
+    AtualizarPermissaoUseCase,
+    DeletarPermissaoUseCase,
+  ],
 })
 export class PermissoesModule {}

@@ -6,12 +6,6 @@ import { PerfisModule } from './application/perfis/perfis.application.module';
 import { PermissoesModule } from './application/permissoes/permissoes.application.module';
 
 @Module({
-  imports: [
-    InfrastructureModule,
-    HealthModule,
-    UsuariosModule,
-    PerfisModule,
-    PermissoesModule,
-  ],
+  imports: [InfrastructureModule, HealthModule, UsuariosModule, PerfisModule, PermissoesModule],
 })
 export class AppModule {}

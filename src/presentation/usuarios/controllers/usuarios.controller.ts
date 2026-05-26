@@ -50,10 +50,7 @@ export class UsuariosController {
   }
 
   @Patch(':id')
-  async atualizar(
-    @Param('id') id: string,
-    @Body() atualizarUsuarioDto: AtualizarUsuarioDto,
-  ) {
+  async atualizar(@Param('id') id: string, @Body() atualizarUsuarioDto: AtualizarUsuarioDto) {
     return this.atualizarUsuarioUseCase.execute(id, atualizarUsuarioDto);
   }
 

@@ -1,4 +1,8 @@
-import { Permissao, CriarPermissaoParams, AtualizarPermissaoParams } from '../entities/permissao.entity';
+import {
+  Permissao,
+  CriarPermissaoParams,
+  AtualizarPermissaoParams,
+} from '../entities/permissao.entity';
 
 export const IPERMISSOES_REPOSITORY = 'IPERMISSOES_REPOSITORY';
 

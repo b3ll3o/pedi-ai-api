@@ -1,5 +1,8 @@
 import { ConflictException, NotFoundException, Inject } from '@nestjs/common';
-import { IPerfisRepository, IPERFIS_REPOSITORY } from '../../../domain/interfaces/perfis-repository.interface';
+import {
+  IPerfisRepository,
+  IPERFIS_REPOSITORY,
+} from '../../../domain/interfaces/perfis-repository.interface';
 import { AtualizarPerfilParams } from '../../../domain/entities/perfil.entity';
 
 export class AtualizarPerfilUseCase {

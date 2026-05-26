@@ -1,6 +1,12 @@
 import { ConflictException, Inject } from '@nestjs/common';
-import { IUsuariosRepository, IUSUARIOS_REPOSITORY } from '../../../domain/interfaces/usuarios-repository.interface';
-import { ISenhaHashService, ISENHA_HASH_SERVICE } from '../../../domain/services/senha-hash.service';
+import {
+  IUsuariosRepository,
+  IUSUARIOS_REPOSITORY,
+} from '../../../domain/interfaces/usuarios-repository.interface';
+import {
+  ISenhaHashService,
+  ISENHA_HASH_SERVICE,
+} from '../../../domain/services/senha-hash.service';
 import { CriarUsuarioParams } from '../../../domain/entities/usuario.entity';
 
 export class CriarUsuarioUseCase {
@@ -23,7 +29,7 @@ export class CriarUsuarioUseCase {
       senha: senhaHashed,
     });
 
-    const { senha: _, ...resultado } = usuario;
+    const { senha: _senha, ...resultado } = usuario;
     return resultado;
   }
 }

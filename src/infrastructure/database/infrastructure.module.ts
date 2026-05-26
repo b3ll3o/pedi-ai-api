@@ -7,11 +7,7 @@ import { PermissoesRepositoryImpl } from './prisma/repositories/permissoes-repos
 @Global()
 @Module({
   imports: [PrismaModule],
-  providers: [
-    UsuariosRepositoryImpl,
-    PerfisRepositoryImpl,
-    PermissoesRepositoryImpl,
-  ],
+  providers: [UsuariosRepositoryImpl, PerfisRepositoryImpl, PermissoesRepositoryImpl],
   exports: [UsuariosRepositoryImpl, PerfisRepositoryImpl, PermissoesRepositoryImpl],
 })
 export class InfrastructureModule {}

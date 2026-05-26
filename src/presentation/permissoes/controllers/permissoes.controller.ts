@@ -14,7 +14,10 @@ import { ListarPermissoesUseCase } from '../../../application/permissoes/usecase
 import { ListarPermissaoPorIdUseCase } from '../../../application/permissoes/usecases/listar-permissao-por-id.usecase';
 import { AtualizarPermissaoUseCase } from '../../../application/permissoes/usecases/atualizar-permissao.usecase';
 import { DeletarPermissaoUseCase } from '../../../application/permissoes/usecases/deletar-permissao.usecase';
-import { CriarPermissaoDto, AtualizarPermissaoDto } from '../../../application/permissoes/dto/permissao.dto';
+import {
+  CriarPermissaoDto,
+  AtualizarPermissaoDto,
+} from '../../../application/permissoes/dto/permissao.dto';
 
 @Controller('permissoes')
 export class PermissoesController {
@@ -42,10 +45,7 @@ export class PermissoesController {
   }
 
   @Patch(':id')
-  async atualizar(
-    @Param('id') id: string,
-    @Body() atualizarPermissaoDto: AtualizarPermissaoDto,
-  ) {
+  async atualizar(@Param('id') id: string, @Body() atualizarPermissaoDto: AtualizarPermissaoDto) {
     return this.atualizarPermissaoUseCase.execute(id, atualizarPermissaoDto);
   }
 

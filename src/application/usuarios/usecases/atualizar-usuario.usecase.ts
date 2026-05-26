@@ -1,6 +1,12 @@
 import { NotFoundException, Inject } from '@nestjs/common';
-import { IUsuariosRepository, IUSUARIOS_REPOSITORY } from '../../../domain/interfaces/usuarios-repository.interface';
-import { ISenhaHashService, ISENHA_HASH_SERVICE } from '../../../domain/services/senha-hash.service';
+import {
+  IUsuariosRepository,
+  IUSUARIOS_REPOSITORY,
+} from '../../../domain/interfaces/usuarios-repository.interface';
+import {
+  ISenhaHashService,
+  ISENHA_HASH_SERVICE,
+} from '../../../domain/services/senha-hash.service';
 import { AtualizarUsuarioParams } from '../../../domain/entities/usuario.entity';
 
 export class AtualizarUsuarioUseCase {
@@ -24,7 +30,7 @@ export class AtualizarUsuarioUseCase {
 
     const atualizado = await this.usuariosRepository.update(id, updateData);
 
-    const { senha, ...resultado } = atualizado;
+    const { senha: _senha, ...resultado } = atualizado;
     return resultado;
   }
 }

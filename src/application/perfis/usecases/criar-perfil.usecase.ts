@@ -1,5 +1,8 @@
 import { ConflictException, Inject } from '@nestjs/common';
-import { IPerfisRepository, IPERFIS_REPOSITORY } from '../../../domain/interfaces/perfis-repository.interface';
+import {
+  IPerfisRepository,
+  IPERFIS_REPOSITORY,
+} from '../../../domain/interfaces/perfis-repository.interface';
 import { CriarPerfilParams } from '../../../domain/entities/perfil.entity';
 
 export class CriarPerfilUseCase {
