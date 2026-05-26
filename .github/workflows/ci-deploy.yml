@@ -78,7 +78,7 @@ jobs:
             cd pedi-ai-api
 
             # Pull latest changes
-            git pull origin master
+            git pull origin main
 
             # Parar serviços existentes
             docker compose down || true
