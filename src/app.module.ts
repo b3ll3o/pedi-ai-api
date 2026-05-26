@@ -4,8 +4,16 @@ import { HealthModule } from './common/health/health.module';
 import { UsuariosModule } from './application/usuarios/usuarios.application.module';
 import { PerfisModule } from './application/perfis/perfis.application.module';
 import { PermissoesModule } from './application/permissoes/permissoes.application.module';
+import { AuthModule } from './presentation/auth/auth.module';
 
 @Module({
-  imports: [InfrastructureModule, HealthModule, UsuariosModule, PerfisModule, PermissoesModule],
+  imports: [
+    InfrastructureModule,
+    HealthModule,
+    UsuariosModule,
+    PerfisModule,
+    PermissoesModule,
+    AuthModule,
+  ],
 })
 export class AppModule {}

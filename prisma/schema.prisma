@@ -10,44 +10,56 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  nome      String
-  email     String   @unique
-  senha     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  version   Int      @default(1)
-  perfilId  String?  @map("perfil_id")
-  perfil    Perfil?   @relation(fields: [perfilId], references: [id])
+  id            String         @id @default(uuid())
+  nome          String
+  email         String         @unique
+  senha         String
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+  version       Int            @default(1)
+  perfilId      String?        @map("perfil_id")
+  perfil        Perfil?        @relation(fields: [perfilId], references: [id])
+  refreshTokens RefreshToken[] @relation("UserRefreshTokens")
 
   @@map("users")
 }
 
 model Perfil {
-  id          String   @id @default(uuid())
-  nome        String   @unique
-  descricao   String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
-  version     Int      @default(1)
-  permissoes  Permissao[]
-  usuarios    User[]
+  id         String      @id @default(uuid())
+  nome       String      @unique
+  descricao  String?
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  deletedAt  DateTime?   @map("deleted_at")
+  version    Int         @default(1)
+  permissoes Permissao[]
+  usuarios   User[]
 
   @@map("perfis")
 }
 
 model Permissao {
-  id          String   @id @default(uuid())
-  nome        String   @unique
-  chave       String   @unique
-  descricao   String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
-  version     Int      @default(1)
-  perfis      Perfil[]
+  id        String    @id @default(uuid())
+  nome      String    @unique
+  chave     String    @unique
+  descricao String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  version   Int       @default(1)
+  perfis    Perfil[]
 
   @@map("permissoes")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation("UserRefreshTokens", fields: [userId], references: [id])
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
 }
