@@ -100,16 +100,46 @@ jobs:
             cp deploy/pedi-ai-api.service /etc/systemd/system/
 
             # Parar e desabilitar container Docker (se existir)
-            cd /root/pedi-ai-api
-            docker compose down 2>/dev/null || true
+            docker ps -a --filter "name=pedi_ai_api" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true
+            docker compose -f /root/pedi-ai-api/docker-compose.yml down 2>/dev/null || true
             systemctl disable pedi-ai-api 2>/dev/null || true
+
+            # Garantir que porta 3001 está livre
             fuser -k 3001/tcp 2>/dev/null || true
-            sleep 2
+            lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
+            sleep 3
+
+            # Criar .env se não existir (temporário)
+            if [ ! -f /root/pedi-ai-api/.env ]; then
+              echo "ATENÇÃO: .env não encontrado, criando temporário..."
+              echo "DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/dev?schema=public" > /root/pedi-ai-api/.env
+              echo "JWT_SECRET=temp-secret-please-replace" >> /root/pedi-ai-api/.env
+              echo "JWT_REFRESH_SECRET=temp-refresh-secret-please-replace" >> /root/pedi-ai-api/.env
+              echo "JWT_EXPIRES_IN=15m" >> /root/pedi-ai-api/.env
+              echo "JWT_REFRESH_EXPIRES_IN=7d" >> /root/pedi-ai-api/.env
+              echo "PORT=3001" >> /root/pedi-ai-api/.env
+              echo "HOST=0.0.0.0" >> /root/pedi-ai-api/.env
+              echo "NODE_ENV=production" >> /root/pedi-ai-api/.env
+              echo "ALLOWED_ORIGINS=http://andreazzi.tech" >> /root/pedi-ai-api/.env
+            fi
+
+            # Verificar se .env tem DATABASE_URL
+            if ! grep -q "DATABASE_URL" /root/pedi-ai-api/.env 2>/dev/null; then
+              echo "DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/dev?schema=public" >> /root/pedi-ai-api/.env
+            fi
 
             # Recarregar e iniciar serviço systemd
             systemctl daemon-reload
             systemctl enable pedi-ai-api
             systemctl restart pedi-ai-api
+
+            # Ver logs se falhar
+            sleep 3
+            if ! systemctl is-active --quiet pedi-ai-api; then
+              echo "=== Logs do systemd ==="
+              journalctl -u pedi-ai-api --no-pager -n 50 || true
+              systemctl status pedi-ai-api --no-pager || true
+            fi
 
             # Aguardar API ficar ready
             echo "Aguardando API..."
