@@ -88,6 +88,9 @@ jobs:
 
             cd /root/pedi-ai-api
 
+            # Limpar arquivos não rastreados que podem conflitar
+            git clean -fd
+
             # Pull latest changes
             git pull origin main
 
@@ -112,7 +115,7 @@ jobs:
             # Criar .env se não existir (temporário)
             if [ ! -f /root/pedi-ai-api/.env ]; then
               echo "ATENÇÃO: .env não encontrado, criando temporário..."
-              echo "DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/dev?schema=public" > /root/pedi-ai-api/.env
+              echo "DATABASE_URL=postgresql://admin:admin@localhost:5432/dev?schema=public" > /root/pedi-ai-api/.env
               echo "JWT_SECRET=temp-secret-please-replace" >> /root/pedi-ai-api/.env
               echo "JWT_REFRESH_SECRET=temp-refresh-secret-please-replace" >> /root/pedi-ai-api/.env
               echo "JWT_EXPIRES_IN=15m" >> /root/pedi-ai-api/.env
@@ -125,7 +128,7 @@ jobs:
 
             # Verificar se .env tem DATABASE_URL
             if ! grep -q "DATABASE_URL" /root/pedi-ai-api/.env 2>/dev/null; then
-              echo "DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/dev?schema=public" >> /root/pedi-ai-api/.env
+              echo "DATABASE_URL=postgresql://admin:admin@localhost:5432/dev?schema=public" >> /root/pedi-ai-api/.env
             fi
 
             # Recarregar e iniciar serviço systemd
