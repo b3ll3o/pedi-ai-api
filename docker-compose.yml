@@ -16,7 +16,7 @@ services:
       PORT: "3001"
       HOST: "0.0.0.0"
       NODE_ENV: production
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      ALLOWED_ORIGINS: "http://andreazzi.tech,http://localhost:3000,http://localhost:3001,http://web:3000"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:3001/api/health || exit 1"]
       interval: 10s
