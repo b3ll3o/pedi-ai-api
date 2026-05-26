@@ -1,0 +1,116 @@
+name: API CI & Deploy
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'pedi-ai-api/**'
+  pull_request:
+    paths:
+      - 'pedi-ai-api/**'
+  workflow_dispatch:
+
+concurrency:
+  group: api-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: pedi-ai-api/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+        working-directory: pedi-ai-api
+
+      - name: Lint
+        run: npm run lint
+        working-directory: pedi-ai-api
+
+      - name: Type check
+        run: npx tsc --noEmit
+        working-directory: pedi-ai-api
+
+      - name: Testes unitários
+        run: npm test
+        working-directory: pedi-ai-api
+
+      - name: Verificar cobertura
+        run: npm run test:cov
+        working-directory: pedi-ai-api
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: ci
+    if: github.ref == 'refs/heads/master'
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Deploy API na VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+
+            cd pedi-ai-api
+
+            # Pull latest changes
+            git pull origin master
+
+            # Parar serviços existentes
+            docker compose down || true
+
+            # Garantir que porta está livre
+            fuser -k 3001/tcp 2>/dev/null || true
+            sleep 2
+
+            # Build e start com docker-compose.prod.yml (ou docker-compose.yml)
+            docker compose up -d --build
+
+            # Aguardar PostgreSQL ficar ready
+            echo "Aguardando PostgreSQL..."
+            for i in {1..30}; do
+              if docker compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
+                echo "PostgreSQL pronto!"
+                break
+              fi
+              echo "Aguardando... ($i/30)"
+              sleep 2
+            done
+
+            # Aguardar API ficar healthy
+            echo "Aguardando API..."
+            for i in {1..30}; do
+              if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+                echo "API pronta!"
+                break
+              fi
+              echo "Aguardando API... ($i/30)"
+              sleep 2
+            done
+
+            # Verificar logs
+            docker compose logs --tail=20 api
