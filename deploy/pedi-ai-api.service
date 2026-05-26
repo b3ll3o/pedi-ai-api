@@ -1,0 +1,16 @@
+[Unit]
+Description=Pedi-AI API (NestJS)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/pedi-ai-api
+ExecStart=/usr/bin/node dist/main.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+EnvironmentFile=/root/pedi-ai-api/.env
+
+[Install]
+WantedBy=multi-user.target

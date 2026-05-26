@@ -71,41 +71,46 @@ jobs:
             mkdir -p ~/.ssh
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
 
-            # Se pasta não existe, clonar. Se existe, fazer pull.
-            if [ ! -d pedi-ai-api ]; then
-              git clone https://github.com/b3ll3o/pedi-ai-api.git pedi-ai-api
+            # Instalar Node.js 20 se não existir
+            if ! command -v node &> /dev/null || [[ $(node -v) != v20* ]]; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              apt-get install -y nodejs
             fi
 
-            cd pedi-ai-api
+            # Se pasta não existe, clonar. Se existe, fazer pull.
+            if [ ! -d /root/pedi-ai-api ]; then
+              git clone https://github.com/b3ll3o/pedi-ai-api.git /root/pedi-ai-api
+            fi
+
+            cd /root/pedi-ai-api
 
             # Pull latest changes
             git pull origin main
 
-            # Parar serviços existentes
-            docker compose down || true
+            # Build
+            npm ci
+            npx prisma generate
+            npm run build
 
-            # Garantir que porta está livre
+            # Copiar e instalar serviço systemd
+            cp deploy/pedi-ai-api.service /etc/systemd/system/
+
+            # Parar e desabilitar container Docker (se existir)
+            cd /root/pedi-ai-api
+            docker compose down 2>/dev/null || true
+            systemctl disable pedi-ai-api 2>/dev/null || true
             fuser -k 3001/tcp 2>/dev/null || true
             sleep 2
 
-            # Build e start com docker-compose.prod.yml (ou docker-compose.yml)
-            docker compose up -d --build
+            # Recarregar e iniciar serviço systemd
+            systemctl daemon-reload
+            systemctl enable pedi-ai-api
+            systemctl restart pedi-ai-api
 
-            # Aguardar PostgreSQL ficar ready
-            echo "Aguardando PostgreSQL..."
-            for i in {1..30}; do
-              if docker compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
-                echo "PostgreSQL pronto!"
-                break
-              fi
-              echo "Aguardando... ($i/30)"
-              sleep 2
-            done
-
-            # Aguardar API ficar healthy
+            # Aguardar API ficar ready
             echo "Aguardando API..."
             for i in {1..30}; do
-              if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+              if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
                 echo "API pronta!"
                 break
               fi
@@ -113,5 +118,5 @@ jobs:
               sleep 2
             done
 
-            # Verificar logs
-            docker compose logs --tail=20 api
+            # Verificar status
+            systemctl status pedi-ai-api --no-pager
