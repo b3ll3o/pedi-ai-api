@@ -73,8 +73,12 @@ jobs:
 
             # Instalar Node.js 20 se não existir
             if ! command -v node &> /dev/null || [[ $(node -v) != v20* ]]; then
+              # Aguardar lock do apt liberar
+              while fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do sleep 1; done
+              apt-get update -y
               curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
               apt-get install -y nodejs
+              npm install -g npm@latest
             fi
 
             # Se pasta não existe, clonar. Se existe, fazer pull.
