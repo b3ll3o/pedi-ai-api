@@ -132,6 +132,13 @@ jobs:
               echo "DATABASE_URL=postgresql://admin:admin@localhost:5432/dev?schema=public" >> /root/pedi-ai-api/.env
             fi
 
+            # Garantir que ALLOWED_ORIGINS está correto (substituir se necessário)
+            if grep -q "ALLOWED_ORIGINS" /root/pedi-ai-api/.env 2>/dev/null; then
+              sed -i 's|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=http://andreazzi.tech|' /root/pedi-ai-api/.env
+            else
+              echo "ALLOWED_ORIGINS=http://andreazzi.tech" >> /root/pedi-ai-api/.env
+            fi
+
             # Recarregar e iniciar serviço systemd
             systemctl daemon-reload
             systemctl enable pedi-ai-api
