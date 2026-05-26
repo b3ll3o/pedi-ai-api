@@ -10,7 +10,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     if (!connectionString) {
       throw new Error('DATABASE_URL environment variable is not set');
     }
-    const pool = new Pool({ connectionString });
+    const url = new URL(connectionString);
+    url.searchParams.set('TimeZone', 'America/Sao_Paulo');
+    const pool = new Pool({ connectionString: url.toString() });
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }
