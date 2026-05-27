@@ -11,18 +11,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Validation:** class-validator
 - **API:** REST JSON
 
-## Arquitetura (OpenSpec / SDD)
-
-Desenvolvimento orientado por especificações (`openspec/specs/`). Camadas:
-
-```
-src/
-├── domain/           # Entidades, interfaces de repositório, serviços
-├── application/      # DTOs, módulos de aplicação
-├── infrastructure/   # Prisma, implementação de repositórios
-└── presentation/     # Controllers REST
-```
-
 ---
 
 ## Comandos
@@ -39,6 +27,54 @@ npm run lint          # ESLint + fix
 
 ---
 
+## Arquitetura DDD (Domain-Driven Design)
+
+Este projeto utiliza **Domain-Driven Design** com camadas bem definidas. Cada domínio (bounded context) possui sua própria estrutura.
+
+### Estrutura por Domínio
+
+```
+src/
+└── <dominio>/                    # Bounded Context (ex: autenticacao, cardapio, pedido)
+    ├── domain/                   # Camada de domínio (regras de negócio)
+    │   ├── entities/             # Entity classes
+    │   ├── aggregates/           # Aggregate roots
+    │   ├── value-objects/        # Value objects
+    │   ├── services/             # Domain services
+    │   ├── events/               # Domain events
+    │   └── repositories/         # Repository interfaces (ports)
+    ├── application/              # Casos de uso
+    │   ├── dto/                  # Data transfer objects
+    │   ├── use-cases/            # Application services / use cases
+    │   └── ports/                # Interface de entrada (controllers)
+    └── infrastructure/           # Implementações externas
+        ├── persistence/          # Prisma repository implementations
+        └── external/             # External services adapters
+```
+
+### Terminologia DDD
+
+| Conceito | Descrição |
+|----------|-----------|
+| **Entity** | Objeto com identidade única que muda ao longo do tempo |
+| **Aggregate** | Grupo de entidades tratadas como unidade com invariantes |
+| **Value Object** | Objeto sem identidade, imutável, definido por seus atributos |
+| **Domain Service** | Operação sem estado que pertence ao domínio |
+| **Repository (Port)** | Interface para acesso a dados (persistência) |
+| **Application Service** | Orquestra casos de uso, coordena fluxos |
+| **Infrastructure (Adapter)** | Implementação concreta de portas |
+
+### Domínios Identificados
+
+| Domínio | Descrição | Pasta |
+|---------|-----------|-------|
+| `autenticacao` | Autenticação e autorização | `src/autenticacao/` |
+| `cardapio` | Cardápio e itens | `src/cardapio/` |
+| `pedido` | Pedidos | `src/pedido/` |
+| `usuario` | Usuários do sistema | `src/usuario/` |
+
+---
+
 ## OpenSpec-SDD Workflow
 
 ### Classificação por Impacto
@@ -47,7 +83,7 @@ npm run lint          # ESLint + fix
 |------------|---------------------------------------|------------------------------------------------------|
 | `minor`    | Bug fix, refactor interno             | spec.md atualizada                                   |
 | `standard` | Nova feature, mudança moderada        | proposal + spec + tasks                              |
-| `major`    | Mudança arquitetural, multi-pacote    | proposal + design + tasks + review formal            |
+| `major`    | Mudança arquitetural, multi-domínio   | proposal + design + tasks + review formal            |
 
 ### Estados de Spec
 
@@ -62,33 +98,37 @@ npm run lint          # ESLint + fix
 ### Fluxo Completo
 
 ```
-1. Criar spec (draft)
+1. Criar spec (draft) em openspec/specs/<dominio>/
 2. Classificar (minor/standard/major)
-3. Revisar (review → approved)
-4. Implementar (tasks.md, código)
-5. Validar (testes, coverage 80%+)
-6. Vincular (PR/commit → spec)
-7. Arquivar (move to archive/YYYY-MM/)
+3. Identificar domínio (bounded context)
+4. Revisar (review → approved)
+5. Implementar (DDD: entity, aggregate, service, repository)
+6. Validar (testes, coverage 80%+)
+7. Vincular (PR/commit → spec)
+8. Arquivar (move to archive/YYYY-MM/)
 ```
 
 ### Regras Obrigatórias
 
 1. **Spec first** — ANTES de escrever código, a especificação DEVE existir em `openspec/specs/`
-2. **Classificação** — Toda spec DEVE ter tipo (minor/standard/major) e estado definido
-3. **Proposta** — Mudanças `standard` e `major` DEVEM ter proposta em `openspec/changes/<feature>/proposal.md`
-4. **Design** — Mudanças `major` DEVEM ter design documentado em `openspec/changes/<feature>/design.md`
-5. **Tasks** — Implementação QUEBRADA em tarefas em `openspec/changes/<feature>/tasks.md`
-6. **Idioma** — TODO código e documentação em **Português Brasileiro (pt-BR)**
-7. **Testes** — Cobertura mínima 80%
-8. **Aceitação** — Implementação SÓ pode começar APÓS spec ter estado `approved`
-9. **Arquivamento** — Changes concluídas DEVEM ser movidas para `openspec/archive/<YYYY-MM>/` com `_summary.md`
+2. **DDD** — TODO código DEVE seguir Domain-Driven Design (entities, aggregates, services, repositories)
+3. **Classificação** — Toda spec DEVE ter tipo (minor/standard/major) e estado definido
+4. **Proposta** — Mudanças `standard` e `major` DEVEM ter proposta em `openspec/changes/<feature>/proposal.md`
+5. **Design** — Mudanças `major` DEVEM ter design documentado em `openspec/changes/<feature>/design.md`
+6. **Tasks** — Implementação QUEBRADA em tarefas em `openspec/changes/<feature>/tasks.md`
+7. **Idioma** — TODO código e documentação em **Português Brasileiro (pt-BR)**
+8. **Testes** — Cobertura mínima 80%
+9. **Aceitação** — Implementação SÓ pode começar APÓS spec ter estado `approved`
+10. **Arquivamento** — Changes concluídas DEVEM ser movidas para `openspec/archive/<YYYY-MM>/` com `_summary.md`
 
 ### Checklist de Quality Gate
 
 Para uma spec ser considerada válida (estado `approved`), DEVE conter:
 
 - [ ] **Objetivo**: O que resolve, para quem
+- [ ] **Domínio**: Bounded context identificado
 - [ ] **Contexto**: Situação atual, problema
+- [ ] **Modelo de Domínio**: Entidades, agregados, value objects, serviços definidos
 - [ ] **Requisitos**: RF e RNF numerados (RF-01, RF-02...)
 - [ ] **Critérios de aceitação**: Mensuráveis e testáveis
 - [ ] **Decisões de design**: Links para design.md se aplicável
@@ -102,6 +142,7 @@ Para uma spec ser considerada válida (estado `approved`), DEVE conter:
 ---
 status: draft|review|approved|implemented|archived
 type: minor|standard|major
+domain: <bounded-context>
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 linked_prs: [PR #...]
@@ -109,11 +150,35 @@ linked_prs: [PR #...]
 
 # <Nome da Spec>
 
+## Domínio
+<Bounded Context>
+
 ## Objetivo
 O que resolve, para quem.
 
 ## Contexto
 Situação atual, problema.
+
+## Modelo de Domínio
+
+### Entidades
+- **Entidade1**: descrição, atributos principais
+- **Entidade2**: descrição, atributos principais
+
+### Agregados
+- **Agregado1**: raiz, entidades pertencentes, invariantes
+
+### Value Objects
+- **ValueObject1**: descrição, atributos
+
+### Serviços de Domínio
+- **Servico1**: responsabilidade, regras
+
+### Eventos de Domínio
+- **Evento1**: quando ocorre, dados carregados
+
+### Repositórios (Ports)
+- **IRepositorio**: interface para persistência
 
 ## Requisitos Funcionais (RF)
 - RF-01: ...
@@ -143,13 +208,15 @@ Commits e PRs DEVEM referenciar a spec que implementam:
 
 ```
 commit: <hash>
-spec: openspec/specs/<domain>/spec.md
+spec: openspec/specs/<dominio>/spec.md
+domain: <bounded-context>
 ```
 
 No PR description:
 ```
 ## Spec
-- Implementa: openspec/specs/<domain>/spec.md
+- Implementa: openspec/specs/<dominio>/spec.md
+- Domínio: <bounded-context>
 ```
 
 ### Automação CI
@@ -159,6 +226,7 @@ No PR description:
   sem que a spec correspondente tenha status "approved"
 - Commits DEVEM referenciar spec (commit msg ou PR description)
 - Coverage mínimo 80% enforced no CI
+- Validação de tipos DDD (agregados, entidades, value objects)
 ```
 
 ### Estrutura OpenSpec
@@ -167,7 +235,7 @@ No PR description:
 openspec/
 ├── config.yaml          # Configuração do projeto
 ├── specs/               # Especificações de domínio
-│   └── <domain>/
+│   └── <dominio>/
 │       └── spec.md
 └── changes/             # Propostas de mudança
     └── <feature>/
@@ -184,18 +252,62 @@ openspec/
 
 ## Padrões de Código
 
-- Repository pattern para acesso a dados
-- DTOs com class-validator para validação
-- Todos endpoints DEVEM documentar respostas de erro
-- Incluir exemplos de request/response em specs
-- Mudanças quebrantes requerem nova versão da spec
+### Entities
+-命名: PascalCase, nome do domínio (ex: Usuario, ItemCardapio)
+- Construtor com validação básica
+- Métodos de domínio (comportamentos)
+- Getters para propriedades
+
+### Aggregates
+-命名: PascalCase + Aggregate suffix (ex: PedidoAggregate)
+- Raiz de agregação gerencia invariantes
+- Métodos factory para criação
+- Referência por ID (não por objeto)
+
+### Value Objects
+-命名: PascalCase (ex: Email, Dinheiro)
+- Imutáveis (sem setters)
+- equals() baseado em atributos
+
+### Domain Services
+-命名: PascalCase + Service suffix
+- Sem estado (stateless)
+- Coordenam múltiplos agregados/entities
+
+### Repositories
+-命名: I + Nome + Repository (ex: IUsuarioRepository)
+- Interface definida no domain
+- Implementação no infrastructure
+
+### Application Services
+-命名: PascalCase + UseCase ou ApplicationService suffix
+- Orquestra fluxo de casos de uso
+- Use case单个 (ex: CriarPedidoUseCase)
+- Coordenam domain services e repositories
+
+### DTOs
+-命名: PascalCase + DTO suffix
+- Apenas dados (sem comportamento)
+- Validação com class-validator
 
 ---
 
 ## Testes
 
 - **Cobertura mínima:** 80%
-- **Testes unitários:** TODAS as integrações DEVEM estar cobertas
+- **Testes unitários:** TODAS as entidades, agregados, serviços de domínio
+- **Testes de integração:** Repositórios, serviços de aplicação
 - **Testes E2E:** TODOS os fluxos da API DEVEM ter testes E2E
 - Testes DEVEM ser escritos ANTES ou DURANTE a implementação
-- Code review DEVE verificar conformidade com spec
+- Code review DEVE verificar conformidade com spec e DDD
+
+---
+
+## Camadas e Responsabilidades
+
+| Camada | Responsabilidade | Não fazer |
+|--------|-----------------|-----------|
+| `domain` | Regras de negócio, modelo do domínio | Acesso a banco, HTTP |
+| `application` | Casos de uso, orquestração | Regras de negócio diretas |
+| `infrastructure` | Persistência, external services | Lógica de negócio |
+| `presentation` | Controllers REST | Lógica de negócio |
