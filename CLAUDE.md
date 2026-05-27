@@ -68,10 +68,10 @@ src/
 
 | Domínio | Descrição | Pasta |
 |---------|-----------|-------|
-| `autenticacao` | Autenticação e autorização | `src/autenticacao/` |
-| `cardapio` | Cardápio e itens | `src/cardapio/` |
-| `pedido` | Pedidos | `src/pedido/` |
-| `usuario` | Usuários do sistema | `src/usuario/` |
+| `autenticacao` | Autenticação e autorização | `src/presentation/auth/` |
+| `usuario` | Usuários do sistema | `src/application/usuarios/` |
+| `perfil` | Perfis de usuário | `src/application/perfis/` |
+| `permissao` | Permissões de acesso | `src/application/permissoes/` |
 
 ---
 
