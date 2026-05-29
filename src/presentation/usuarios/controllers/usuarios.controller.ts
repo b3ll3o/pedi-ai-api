@@ -8,7 +8,12 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesAuthGuard } from '../../auth/guards/roles-auth.guard';
+import { RolesDecorators } from '../../auth/decorators/roles.decorator';
+import { Roles } from '../../auth/enums/roles.enum';
 import { CriarUsuarioUseCase } from '../../../application/usuarios/usecases/criar-usuario.usecase';
 import { ListarUsuariosUseCase } from '../../../application/usuarios/usecases/listar-usuarios.usecase';
 import { ListarUsuarioPorIdUseCase } from '../../../application/usuarios/usecases/listar-usuario-por-id.usecase';
@@ -18,6 +23,8 @@ import { DeletarUsuarioUseCase } from '../../../application/usuarios/usecases/de
 import { CriarUsuarioDto } from '../../../application/usuarios/dto/criar-usuario.dto';
 import { AtualizarUsuarioDto } from '../../../application/usuarios/dto/atualizar-usuario.dto';
 
+@UseGuards(JwtAuthGuard, RolesAuthGuard)
+@RolesDecorators(Roles.ADMIN)
 @Controller('users')
 export class UsuariosController {
   constructor(

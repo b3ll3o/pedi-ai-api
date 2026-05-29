@@ -8,7 +8,12 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesAuthGuard } from '../../auth/guards/roles-auth.guard';
+import { RolesDecorators } from '../../auth/decorators/roles.decorator';
+import { Roles } from '../../auth/enums/roles.enum';
 import { CriarPerfilUseCase } from '../../../application/perfis/usecases/criar-perfil.usecase';
 import { ListarPerfisUseCase } from '../../../application/perfis/usecases/listar-perfis.usecase';
 import { ListarPerfilPorIdUseCase } from '../../../application/perfis/usecases/listar-perfil-por-id.usecase';
@@ -22,6 +27,8 @@ import {
   AssociarPermissoesDto,
 } from '../../../application/perfis/dto/perfil.dto';
 
+@UseGuards(JwtAuthGuard, RolesAuthGuard)
+@RolesDecorators(Roles.ADMIN)
 @Controller('perfis')
 export class PerfisController {
   constructor(

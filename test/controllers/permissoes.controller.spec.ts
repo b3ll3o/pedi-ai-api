@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { PermissoesController } from '../../src/presentation/permissoes/controllers/permissoes.controller';
+import { IPERFIS_REPOSITORY } from '../../src/domain/interfaces/perfis-repository.interface';
 import { CriarPermissaoUseCase } from '../../src/application/permissoes/usecases/criar-permissao.usecase';
 import { ListarPermissoesUseCase } from '../../src/application/permissoes/usecases/listar-permissoes.usecase';
 import { ListarPermissaoPorIdUseCase } from '../../src/application/permissoes/usecases/listar-permissao-por-id.usecase';
@@ -28,8 +29,30 @@ describe('PermissoesController', () => {
   let mockListarPorIdUseCase: jest.Mocked<ListarPermissaoPorIdUseCase>;
   let mockAtualizarUseCase: jest.Mocked<AtualizarPermissaoUseCase>;
   let mockDeletarUseCase: jest.Mocked<DeletarPermissaoUseCase>;
+  let mockPerfisRepository: {
+    findById: jest.Mock;
+    findByNome: jest.Mock;
+    findAll: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    softDelete: jest.Mock;
+    associarPermissoes: jest.Mock;
+    desassociarPermissao: jest.Mock;
+    findPermissoesByIds: jest.Mock;
+  };
 
   beforeEach(async () => {
+    mockPerfisRepository = {
+      findById: jest.fn(),
+      findByNome: jest.fn(),
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      associarPermissoes: jest.fn(),
+      desassociarPermissao: jest.fn(),
+      findPermissoesByIds: jest.fn(),
+    };
     mockCriarUseCase = { execute: jest.fn() } as any;
     mockListarUseCase = { execute: jest.fn() } as any;
     mockListarPorIdUseCase = { execute: jest.fn() } as any;
@@ -39,6 +62,7 @@ describe('PermissoesController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PermissoesController],
       providers: [
+        { provide: IPERFIS_REPOSITORY, useValue: mockPerfisRepository },
         { provide: CriarPermissaoUseCase, useValue: mockCriarUseCase },
         { provide: ListarPermissoesUseCase, useValue: mockListarUseCase },
         { provide: ListarPermissaoPorIdUseCase, useValue: mockListarPorIdUseCase },

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { PerfisController } from '../../src/presentation/perfis/controllers/perfis.controller';
+import { IPERFIS_REPOSITORY } from '../../src/domain/interfaces/perfis-repository.interface';
 import { CriarPerfilUseCase } from '../../src/application/perfis/usecases/criar-perfil.usecase';
 import { ListarPerfisUseCase } from '../../src/application/perfis/usecases/listar-perfis.usecase';
 import { ListarPerfilPorIdUseCase } from '../../src/application/perfis/usecases/listar-perfil-por-id.usecase';
@@ -31,8 +32,30 @@ describe('PerfisController', () => {
   let mockDeletarUseCase: jest.Mocked<DeletarPerfilUseCase>;
   let mockAssociarUseCase: jest.Mocked<AssociarPermissoesPerfilUseCase>;
   let mockDesassociarUseCase: jest.Mocked<DesassociarPermissaoPerfilUseCase>;
+  let mockPerfisRepository: {
+    findById: jest.Mock;
+    findByNome: jest.Mock;
+    findAll: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    softDelete: jest.Mock;
+    associarPermissoes: jest.Mock;
+    desassociarPermissao: jest.Mock;
+    findPermissoesByIds: jest.Mock;
+  };
 
   beforeEach(async () => {
+    mockPerfisRepository = {
+      findById: jest.fn(),
+      findByNome: jest.fn(),
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      associarPermissoes: jest.fn(),
+      desassociarPermissao: jest.fn(),
+      findPermissoesByIds: jest.fn(),
+    };
     mockCriarUseCase = { execute: jest.fn() } as any;
     mockListarUseCase = { execute: jest.fn() } as any;
     mockListarPorIdUseCase = { execute: jest.fn() } as any;
@@ -44,6 +67,7 @@ describe('PerfisController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PerfisController],
       providers: [
+        { provide: IPERFIS_REPOSITORY, useValue: mockPerfisRepository },
         { provide: CriarPerfilUseCase, useValue: mockCriarUseCase },
         { provide: ListarPerfisUseCase, useValue: mockListarUseCase },
         { provide: ListarPerfilPorIdUseCase, useValue: mockListarPorIdUseCase },

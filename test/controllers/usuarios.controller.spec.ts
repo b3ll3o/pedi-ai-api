@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UsuariosController } from '../../src/presentation/usuarios/controllers/usuarios.controller';
+import { IPERFIS_REPOSITORY } from '../../src/domain/interfaces/perfis-repository.interface';
 import { CriarUsuarioUseCase } from '../../src/application/usuarios/usecases/criar-usuario.usecase';
 import { ListarUsuariosUseCase } from '../../src/application/usuarios/usecases/listar-usuarios.usecase';
 import { ListarUsuarioPorIdUseCase } from '../../src/application/usuarios/usecases/listar-usuario-por-id.usecase';
@@ -29,8 +30,30 @@ describe('UsuariosController', () => {
   let mockListarPorEmailUseCase: jest.Mocked<ListarUsuarioPorEmailUseCase>;
   let mockAtualizarUseCase: jest.Mocked<AtualizarUsuarioUseCase>;
   let mockDeletarUseCase: jest.Mocked<DeletarUsuarioUseCase>;
+  let mockPerfisRepository: {
+    findById: jest.Mock;
+    findByNome: jest.Mock;
+    findAll: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    softDelete: jest.Mock;
+    associarPermissoes: jest.Mock;
+    desassociarPermissao: jest.Mock;
+    findPermissoesByIds: jest.Mock;
+  };
 
   beforeEach(async () => {
+    mockPerfisRepository = {
+      findById: jest.fn(),
+      findByNome: jest.fn(),
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      associarPermissoes: jest.fn(),
+      desassociarPermissao: jest.fn(),
+      findPermissoesByIds: jest.fn(),
+    };
     mockCriarUseCase = {
       execute: jest.fn(),
     } as any;
@@ -53,6 +76,7 @@ describe('UsuariosController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsuariosController],
       providers: [
+        { provide: IPERFIS_REPOSITORY, useValue: mockPerfisRepository },
         { provide: CriarUsuarioUseCase, useValue: mockCriarUseCase },
         { provide: ListarUsuariosUseCase, useValue: mockListarUseCase },
         { provide: ListarUsuarioPorIdUseCase, useValue: mockListarPorIdUseCase },

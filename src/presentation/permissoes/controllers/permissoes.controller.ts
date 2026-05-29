@@ -8,7 +8,12 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesAuthGuard } from '../../auth/guards/roles-auth.guard';
+import { RolesDecorators } from '../../auth/decorators/roles.decorator';
+import { Roles } from '../../auth/enums/roles.enum';
 import { CriarPermissaoUseCase } from '../../../application/permissoes/usecases/criar-permissao.usecase';
 import { ListarPermissoesUseCase } from '../../../application/permissoes/usecases/listar-permissoes.usecase';
 import { ListarPermissaoPorIdUseCase } from '../../../application/permissoes/usecases/listar-permissao-por-id.usecase';
@@ -19,6 +24,8 @@ import {
   AtualizarPermissaoDto,
 } from '../../../application/permissoes/dto/permissao.dto';
 
+@UseGuards(JwtAuthGuard, RolesAuthGuard)
+@RolesDecorators(Roles.ADMIN)
 @Controller('permissoes')
 export class PermissoesController {
   constructor(
