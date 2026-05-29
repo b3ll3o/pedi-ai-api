@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
-import { IPERFIS_REPOSITORY, IPerfisRepository } from '../../../domain/interfaces/perfis-repository.interface';
+import {
+  IPERFIS_REPOSITORY,
+  IPerfisRepository,
+} from '../../../domain/interfaces/perfis-repository.interface';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { Roles } from '../enums/roles.enum';
 import { RequestWithUser } from '../interfaces/request-with-user.interface';

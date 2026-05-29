@@ -76,7 +76,10 @@ describe('RolesAuthGuard', () => {
     reflector = module.get<Reflector>(Reflector);
   });
 
-  const createMockContext = (user: { userId: string; email: string; perfilId: string | null } | null, requiredRoles: Roles[] | null | undefined): ExecutionContext => {
+  const createMockContext = (
+    user: { userId: string; email: string; perfilId: string | null } | null,
+    requiredRoles: Roles[] | null | undefined,
+  ): ExecutionContext => {
     return {
       switchToHttp: () => ({
         getRequest: () => ({ user }),
@@ -136,11 +139,10 @@ describe('RolesAuthGuard', () => {
       mockPerfisRepository.findById.mockResolvedValue(mockPerfilAdmin);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'admin@pedi.ai',
-        perfilId: 'perfil-admin-id',
-      }, [Roles.ADMIN]);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'admin@pedi.ai', perfilId: 'perfil-admin-id' },
+        [Roles.ADMIN],
+      );
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
@@ -153,11 +155,10 @@ describe('RolesAuthGuard', () => {
       mockPerfisRepository.findById.mockResolvedValue(mockPerfilAdmin);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'admin@pedi.ai',
-        perfilId: 'perfil-admin-id',
-      }, [Roles.ADMIN, 'SUPER_ADMIN' as Roles]);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'admin@pedi.ai', perfilId: 'perfil-admin-id' },
+        [Roles.ADMIN, 'SUPER_ADMIN' as Roles],
+      );
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
@@ -171,13 +172,26 @@ describe('RolesAuthGuard', () => {
       mockPerfisRepository.findById.mockResolvedValue(mockPerfilUsuario);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'usuario@pedi.ai',
-        perfilId: 'perfil-usuario-id',
-      }, [Roles.ADMIN]);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'usuario@pedi.ai', perfilId: 'perfil-usuario-id' },
+        [Roles.ADMIN],
+      );
 
       await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('lança ForbiddenException com mensagem "Acesso insuficiente"', async () => {
+      const TestableRolesAuthGuard = createTestableGuard(true);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([Roles.ADMIN]);
+      mockPerfisRepository.findById.mockResolvedValue(mockPerfilUsuario);
+
+      const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'usuario@pedi.ai', perfilId: 'perfil-usuario-id' },
+        [Roles.ADMIN],
+      );
+
+      await expect(guard.canActivate(context)).rejects.toThrow('Acesso insuficiente');
     });
   });
 
@@ -187,13 +201,13 @@ describe('RolesAuthGuard', () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([Roles.ADMIN]);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'usuario@pedi.ai',
-        perfilId: null,
-      }, [Roles.ADMIN]);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'usuario@pedi.ai', perfilId: null },
+        [Roles.ADMIN],
+      );
 
       await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+      await expect(guard.canActivate(context)).rejects.toThrow('Usuário sem perfil associado');
     });
 
     it('lança ForbiddenException quando perfil não é encontrado', async () => {
@@ -202,13 +216,13 @@ describe('RolesAuthGuard', () => {
       mockPerfisRepository.findById.mockResolvedValue(null);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'usuario@pedi.ai',
-        perfilId: 'perfil-inexistente',
-      }, [Roles.ADMIN]);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'usuario@pedi.ai', perfilId: 'perfil-inexistente' },
+        [Roles.ADMIN],
+      );
 
       await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+      await expect(guard.canActivate(context)).rejects.toThrow('Perfil não encontrado ou inativo');
     });
   });
 
@@ -219,13 +233,13 @@ describe('RolesAuthGuard', () => {
       mockPerfisRepository.findById.mockResolvedValue(mockPerfilDeletado);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'admin@pedi.ai',
-        perfilId: 'perfil-deletado-id',
-      }, [Roles.ADMIN]);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'admin@pedi.ai', perfilId: 'perfil-deletado-id' },
+        [Roles.ADMIN],
+      );
 
       await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+      await expect(guard.canActivate(context)).rejects.toThrow('Perfil não encontrado ou inativo');
     });
   });
 
@@ -235,11 +249,10 @@ describe('RolesAuthGuard', () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(null);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'usuario@pedi.ai',
-        perfilId: null,
-      }, null);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'usuario@pedi.ai', perfilId: null },
+        null,
+      );
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
@@ -250,14 +263,28 @@ describe('RolesAuthGuard', () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([]);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'usuario@pedi.ai',
-        perfilId: null,
-      }, []);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'usuario@pedi.ai', perfilId: null },
+        [],
+      );
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
+    });
+
+    it('acesso liberado quando perfilId existe mas roles e vazio', async () => {
+      const TestableRolesAuthGuard = createTestableGuard(true);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([]);
+
+      const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'usuario@pedi.ai', perfilId: 'perfil-usuario-id' },
+        [],
+      );
+
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
+      expect(mockPerfisRepository.findById).not.toHaveBeenCalled();
     });
   });
 
@@ -266,11 +293,10 @@ describe('RolesAuthGuard', () => {
       const TestableRolesAuthGuard = createTestableGuard(false);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);
-      const context = createMockContext({
-        userId: 'user-id',
-        email: 'admin@pedi.ai',
-        perfilId: 'perfil-admin-id',
-      }, [Roles.ADMIN]);
+      const context = createMockContext(
+        { userId: 'user-id', email: 'admin@pedi.ai', perfilId: 'perfil-admin-id' },
+        [Roles.ADMIN],
+      );
 
       await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
