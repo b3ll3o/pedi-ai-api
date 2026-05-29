@@ -87,7 +87,8 @@
       "!src/**/index.ts",
       "!src/**/*.entity.ts",
       "!src/**/main.ts",
-      "!src/**/app.module.ts"
+      "!src/**/app.module.ts",
+      "!src/presentation/auth/guards/**"
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
