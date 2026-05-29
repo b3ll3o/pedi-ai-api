@@ -7,8 +7,10 @@ import { ListarRestaurantesUseCase } from './application/use-cases/listar-restau
 import { ListarRestaurantePorIdUseCase } from './application/use-cases/listar-restaurante-por-id.usecase';
 import { AtualizarRestauranteUseCase } from './application/use-cases/atualizar-restaurante.usecase';
 import { DeletarRestauranteUseCase } from './application/use-cases/deletar-restaurante.usecase';
+import { AuthModule } from '../presentation/auth/auth.module';
 
 @Module({
+  imports: [AuthModule],
   controllers: [RestaurantesController],
   providers: [
     {

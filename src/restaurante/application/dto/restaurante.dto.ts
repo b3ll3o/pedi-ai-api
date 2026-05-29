@@ -145,12 +145,10 @@ export class RestauranteResponseDto {
     dto.horarioAbertura = entity.horarioAbertura;
     dto.horarioFechamento = entity.horarioFechamento;
     dto.ativo = entity.ativo;
-    dto.createdAt = entity.createdAt instanceof Date
-      ? entity.createdAt.toISOString()
-      : entity.createdAt;
-    dto.updatedAt = entity.updatedAt instanceof Date
-      ? entity.updatedAt.toISOString()
-      : entity.updatedAt;
+    dto.createdAt =
+      entity.createdAt instanceof Date ? entity.createdAt.toISOString() : entity.createdAt;
+    dto.updatedAt =
+      entity.updatedAt instanceof Date ? entity.updatedAt.toISOString() : entity.updatedAt;
     return dto;
   }
 }

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
-import { IRestaurantesRepository, CreateRestauranteInput, UpdateRestauranteInput, Restaurante } from '../../domain/repositories/restaurantes-repository.interface';
+import {
+  IRestaurantesRepository,
+  CreateRestauranteInput,
+  UpdateRestauranteInput,
+  Restaurante,
+} from '../../domain/repositories/restaurantes-repository.interface';
 
 @Injectable()
 export class RestaurantesRepositoryImpl implements IRestaurantesRepository {

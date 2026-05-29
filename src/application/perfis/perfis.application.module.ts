@@ -10,9 +10,10 @@ import { DeletarPerfilUseCase } from './usecases/deletar-perfil.usecase';
 import { AssociarPermissoesPerfilUseCase } from './usecases/associar-permissoes-perfil.usecase';
 import { DesassociarPermissaoPerfilUseCase } from './usecases/desassociar-permissao-perfil.usecase';
 import { PerfisController } from '../../presentation/perfis/controllers/perfis.controller';
+import { AuthModule } from '../../presentation/auth/auth.module';
 
 @Module({
-  imports: [InfrastructureModule],
+  imports: [InfrastructureModule, AuthModule],
   providers: [
     { provide: IPERFIS_REPOSITORY, useClass: PerfisRepositoryImpl },
     CriarPerfilUseCase,

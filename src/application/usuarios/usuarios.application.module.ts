@@ -10,9 +10,10 @@ import { ListarUsuarioPorEmailUseCase } from './usecases/listar-usuario-por-emai
 import { AtualizarUsuarioUseCase } from './usecases/atualizar-usuario.usecase';
 import { DeletarUsuarioUseCase } from './usecases/deletar-usuario.usecase';
 import { UsuariosController } from '../../presentation/usuarios/controllers/usuarios.controller';
+import { AuthModule } from '../../presentation/auth/auth.module';
 
 @Module({
-  imports: [InfrastructureModule],
+  imports: [InfrastructureModule, AuthModule],
   providers: [
     { provide: IUSUARIOS_REPOSITORY, useClass: UsuariosRepositoryImpl },
     { provide: ISENHA_HASH_SERVICE, useClass: SenhaHashService },

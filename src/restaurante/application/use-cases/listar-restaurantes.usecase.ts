@@ -6,6 +6,6 @@ export class ListarRestaurantesUseCase {
 
   async execute(): Promise<RestauranteResponseDto[]> {
     const restaurantes = await this.repository.findAll();
-    return restaurantes.map(r => RestauranteResponseDto.fromEntity(r));
+    return restaurantes.map((r) => RestauranteResponseDto.fromEntity(r));
   }
 }

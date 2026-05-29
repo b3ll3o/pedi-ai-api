@@ -8,9 +8,10 @@ import { ListarPermissaoPorIdUseCase } from './usecases/listar-permissao-por-id.
 import { AtualizarPermissaoUseCase } from './usecases/atualizar-permissao.usecase';
 import { DeletarPermissaoUseCase } from './usecases/deletar-permissao.usecase';
 import { PermissoesController } from '../../presentation/permissoes/controllers/permissoes.controller';
+import { AuthModule } from '../../presentation/auth/auth.module';
 
 @Module({
-  imports: [InfrastructureModule],
+  imports: [InfrastructureModule, AuthModule],
   providers: [
     { provide: IPERMISSOES_REPOSITORY, useClass: PermissoesRepositoryImpl },
     CriarPermissaoUseCase,

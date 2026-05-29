@@ -19,7 +19,10 @@ import { ListarRestaurantesUseCase } from '../../application/use-cases/listar-re
 import { ListarRestaurantePorIdUseCase } from '../../application/use-cases/listar-restaurante-por-id.usecase';
 import { AtualizarRestauranteUseCase } from '../../application/use-cases/atualizar-restaurante.usecase';
 import { DeletarRestauranteUseCase } from '../../application/use-cases/deletar-restaurante.usecase';
-import { CriarRestauranteDto, AtualizarRestauranteDto } from '../../application/dto/restaurante.dto';
+import {
+  CriarRestauranteDto,
+  AtualizarRestauranteDto,
+} from '../../application/dto/restaurante.dto';
 
 @UseGuards(JwtAuthGuard, RolesAuthGuard)
 @RolesDecorators(Roles.ADMIN)
@@ -49,7 +52,10 @@ export class RestaurantesController {
   }
 
   @Patch(':id')
-  async atualizar(@Param('id') id: string, @Body() atualizarRestauranteDto: AtualizarRestauranteDto) {
+  async atualizar(
+    @Param('id') id: string,
+    @Body() atualizarRestauranteDto: AtualizarRestauranteDto,
+  ) {
     return this.atualizarRestauranteUseCase.execute(id, atualizarRestauranteDto);
   }
 
