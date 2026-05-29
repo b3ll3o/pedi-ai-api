@@ -7,7 +7,6 @@ import {
   Length,
   Matches,
   IsBoolean,
-  IsDateString,
 } from 'class-validator';
 
 export class CriarRestauranteDto {
