@@ -5,6 +5,7 @@ import { UsuariosModule } from './application/usuarios/usuarios.application.modu
 import { PerfisModule } from './application/perfis/perfis.application.module';
 import { PermissoesModule } from './application/permissoes/permissoes.application.module';
 import { AuthModule } from './presentation/auth/auth.module';
+import { RestauranteModule } from './restaurante/restaurante.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthModule } from './presentation/auth/auth.module';
     PerfisModule,
     PermissoesModule,
     AuthModule,
+    RestauranteModule,
   ],
 })
 export class AppModule {}

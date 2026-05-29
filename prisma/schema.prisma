@@ -63,3 +63,24 @@ model RefreshToken {
 
   @@map("refresh_tokens")
 }
+
+model Restaurante {
+  id               String    @id @default(uuid())
+  nome             String
+  cnpj             String    @unique
+  email            String?
+  telefone         String?
+  endereco         String
+  cidade           String
+  estado           String    @db.VarChar(2)
+  cep              String
+  horarioAbertura  String    @db.VarChar(5)
+  horarioFechamento String   @db.VarChar(5)
+  ativo            Boolean   @default(true)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+  version          Int       @default(1)
+
+  @@map("restaurantes")
+}
