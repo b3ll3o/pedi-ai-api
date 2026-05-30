@@ -8,9 +8,10 @@ import { ListarRestaurantePorIdUseCase } from './application/use-cases/listar-re
 import { AtualizarRestauranteUseCase } from './application/use-cases/atualizar-restaurante.usecase';
 import { DeletarRestauranteUseCase } from './application/use-cases/deletar-restaurante.usecase';
 import { AuthModule } from '../presentation/auth/auth.module';
+import { PrismaModule } from '../infrastructure/database/prisma/prisma.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, PrismaModule],
   controllers: [RestaurantesController],
   providers: [
     {

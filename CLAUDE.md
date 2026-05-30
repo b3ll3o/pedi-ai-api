@@ -22,7 +22,9 @@ npm run start         # Production
 npm test              # Jest unit tests
 npm run test:e2e     # Jest E2E (config em test/jest-e2e.json)
 npm run test:cov      # Cobertura
-npm run lint          # ESLint + fix
+npm run lint          # ESLint
+npm run lint:fix      # ESLint + auto-fix
+npm run format        # Prettier format
 ```
 
 ---
@@ -311,3 +313,70 @@ openspec/
 | `application` | Casos de uso, orquestração | Regras de negócio diretas |
 | `infrastructure` | Persistência, external services | Lógica de negócio |
 | `presentation` | Controllers REST | Lógica de negócio |
+
+---
+
+## RBAC - Controle de Acesso Baseado em Perfis
+
+O sistema implementa **Role-Based Access Control (RBAC)** onde apenas usuários com perfil `ADMIN` podem gerenciar usuários, perfis e permissões.
+
+### Perfis Existentes
+
+| Perfil | Descrição |
+|--------|-----------|
+| `ADMIN` | Acesso completo a todas as funcionalidades de gerenciamento |
+| `USUARIO` | Acesso básico - apenas leitura do próprio perfil via `GET /auth/me` |
+
+### RolesGuard
+
+O `RolesAuthGuard` verifica se o usuário autenticado possui o perfil necessário para acessar endpoints protegidos.
+
+**Localização:** `src/presentation/auth/guards/roles-auth.guard.ts`
+
+**Uso nos Controllers:**
+
+```typescript
+// Exemplo em UsuariosController
+@Controller('usuarios')
+@UseGuards(JwtAuthGuard, RolesAuthGuard)
+@RolesDecorators(Roles.ADMIN)
+export class UsuariosController {
+  // Todos os endpoints requerem perfil ADMIN
+}
+```
+
+**Decorators disponíveis:**
+
+- `@RolesDecorators(...roles: Roles[])` - Especifica roles requeridos
+- `ROLES_KEY` - Metadata key para roles
+
+### Endpoints Protegidos por Role
+
+| Método | Endpoint | Role Requerido |
+|--------|----------|----------------|
+| GET | /usuarios | ADMIN |
+| POST | /usuarios | ADMIN |
+| PATCH | /usuarios/:id | ADMIN |
+| DELETE | /usuarios/:id | ADMIN |
+| GET | /perfis | ADMIN |
+| POST | /perfis | ADMIN |
+| PATCH | /perfis/:id | ADMIN |
+| DELETE | /perfis/:id | ADMIN |
+| GET | /permissoes | ADMIN |
+| POST | /permissoes | ADMIN |
+| PATCH | /permissoes/:id | ADMIN |
+| DELETE | /permissoes/:id | ADMIN |
+
+**Endpoints públicos (sem proteção):**
+
+- `POST /auth/login` - Autenticação
+- `POST /auth/refresh` - Refresh token
+- `GET /auth/me` - Dados do usuário (requer JWT mas não role específico)
+- `GET /health` - Health check
+
+### Respostas de Erro
+
+| Status | Descrição |
+|--------|-----------|
+| 401 | Não autenticado (token inválido ou ausente) |
+| 403 | Autenticado mas sem permissão (perfil não ADMIN) |

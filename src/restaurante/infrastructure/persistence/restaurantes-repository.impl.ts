@@ -12,9 +12,7 @@ export class RestaurantesRepositoryImpl implements IRestaurantesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: CreateRestauranteInput): Promise<Restaurante> {
-    const restaurante = await this.prisma.restaurante.create({
-      data,
-    });
+    const restaurante = await this.prisma.restaurante.create({ data });
     return restaurante as Restaurante;
   }
 

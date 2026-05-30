@@ -44,6 +44,22 @@ export class AuthService {
     return this.generateTokens(usuario.id, usuario.email, usuario.perfilId ?? null);
   }
 
+  async register(data: { nome: string; email: string; senha: string }): Promise<TokenResponseDto> {
+    const existingUser = await this.usuariosRepository.findByEmail(data.email);
+    if (existingUser) {
+      throw new UnauthorizedException('Email já cadastrado');
+    }
+
+    const hashedSenha = await this.senhaHashService.hash(data.senha);
+    const usuario = await this.usuariosRepository.create({
+      nome: data.nome,
+      email: data.email,
+      senha: hashedSenha,
+    });
+
+    return this.generateTokens(usuario.id, usuario.email, usuario.perfilId ?? null);
+  }
+
   async refreshToken(
     refreshTokenDto: RefreshTokenDto,
   ): Promise<Omit<TokenResponseDto, 'refreshToken' | 'tokenType'>> {

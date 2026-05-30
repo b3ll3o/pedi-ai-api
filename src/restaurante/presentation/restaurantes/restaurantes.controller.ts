@@ -43,6 +43,7 @@ export class RestaurantesController {
 
   @Get()
   async listarTodos() {
+    console.log('[RestaurantesController] listarTodos called');
     return this.listarRestaurantesUseCase.execute();
   }
 
