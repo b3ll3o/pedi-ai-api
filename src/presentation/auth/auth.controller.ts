@@ -60,7 +60,7 @@ export class AuthController {
       id: usuario.id,
       nome: usuario.nome,
       email: usuario.email,
-      perfil: usuario.perfilId ? { id: usuario.perfilId } : null,
+      perfil: usuario.perfil ? { id: usuario.perfil.id, nome: usuario.perfil.nome } : null,
       createdAt: usuario.createdAt,
       updatedAt: usuario.updatedAt,
     };

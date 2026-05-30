@@ -4,6 +4,7 @@ export interface Usuario {
   email: string;
   senha?: string;
   perfilId?: string;
+  perfil?: { id: string; nome: string } | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;

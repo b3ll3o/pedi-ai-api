@@ -14,6 +14,7 @@ export class UsuariosRepositoryImpl implements IUsuariosRepository {
   async findById(id: string): Promise<Usuario | null> {
     const usuario = await this.prisma.user.findUnique({
       where: { id, deletedAt: null },
+      include: { perfil: true },
     });
     return usuario as Usuario | null;
   }

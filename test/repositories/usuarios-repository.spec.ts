@@ -20,6 +20,7 @@ describe('UsuariosRepositoryImpl', () => {
     nome: 'Usuario Teste',
     email: 'teste@exemplo.com',
     senha: 'senha-hashed',
+    perfil: { id: 'perfil-1', nome: 'ADMIN' },
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -47,6 +48,7 @@ describe('UsuariosRepositoryImpl', () => {
       expect(resultado).toEqual(mockUsuario);
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'uuid-test', deletedAt: null },
+        include: { perfil: true },
       });
     });
 

@@ -106,7 +106,7 @@ describe('AuthController', () => {
         id: 'user-123',
         nome: 'Test User',
         email: 'test@test.com',
-        perfilId: 'perfil-1',
+        perfil: { id: 'perfil-1', nome: 'ADMIN' },
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -120,7 +120,7 @@ describe('AuthController', () => {
         id: 'user-123',
         nome: 'Test User',
         email: 'test@test.com',
-        perfil: { id: 'perfil-1' },
+        perfil: { id: 'perfil-1', nome: 'ADMIN' },
         createdAt: mockUsuario.createdAt,
         updatedAt: mockUsuario.updatedAt,
       });
@@ -139,7 +139,7 @@ describe('AuthController', () => {
         id: 'user-123',
         nome: 'Test User',
         email: 'test@test.com',
-        perfilId: null,
+        perfil: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
