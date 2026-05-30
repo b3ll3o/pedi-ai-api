@@ -11,14 +11,10 @@ export class ListarRestaurantesUseCase {
   ) {}
 
   async execute(): Promise<RestauranteResponseDto[]> {
-    console.log('[ListarRestaurantesUseCase] About to call repository.findAll');
     try {
       const restaurantes = await this.repository.findAll();
-      console.log('[ListarRestaurantesUseCase] Got restaurants:', restaurantes.length);
       return restaurantes.map((r) => RestauranteResponseDto.fromEntity(r));
     } catch (error) {
-      console.error('[ListarRestaurantesUseCase] Error:', error.message);
-      console.error('[ListarRestaurantesUseCase] Stack:', error.stack);
       throw error;
     }
   }

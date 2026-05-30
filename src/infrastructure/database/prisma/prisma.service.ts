@@ -12,7 +12,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
     const url = new URL(connectionString);
     url.searchParams.set('TimeZone', 'America/Sao_Paulo');
-    const pool = new Pool({ connectionString: url.toString() });
+    const pool = new Pool({ connectionString: url.toString(), max: 20 });
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }

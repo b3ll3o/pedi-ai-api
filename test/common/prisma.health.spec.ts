@@ -12,10 +12,7 @@ describe('PrismaHealthIndicator', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        { provide: PrismaService, useValue: mockPrisma },
-        PrismaHealthIndicator,
-      ],
+      providers: [{ provide: PrismaService, useValue: mockPrisma }, PrismaHealthIndicator],
     }).compile();
 
     indicator = module.get<PrismaHealthIndicator>(PrismaHealthIndicator);

@@ -21,7 +21,10 @@ describe('HealthController', () => {
 
   describe('check', () => {
     it('deve chamar health.check com indicador prisma', async () => {
-      mockHealthCheckService.check.mockResolvedValue({ status: 'ok', details: { prisma: { status: 'up' } } });
+      mockHealthCheckService.check.mockResolvedValue({
+        status: 'ok',
+        details: { prisma: { status: 'up' } },
+      });
 
       const resultado = await controller.check();
 

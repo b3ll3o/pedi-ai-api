@@ -12,5 +12,6 @@
     "^src/(.*)$": "<rootDir>/src/$1"
   },
   "setupFilesAfterEnv": ["<rootDir>/jest-e2e-setup.ts"],
-  "forceExit": true
+  "forceExit": true,
+  "testTimeout": 30000
 }

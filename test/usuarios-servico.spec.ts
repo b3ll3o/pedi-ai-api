@@ -135,7 +135,9 @@ describe('UsuariosUseCases', () => {
     it('deve lancar NotFoundException quando email nao existe', async () => {
       mockRepository.findByEmail.mockResolvedValue(null);
 
-      await expect(listarPorEmailUseCase.execute('naoexiste@exemplo.com')).rejects.toThrow(NotFoundException);
+      await expect(listarPorEmailUseCase.execute('naoexiste@exemplo.com')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -165,7 +167,9 @@ describe('UsuariosUseCases', () => {
     it('deve lancar NotFoundException quando usuario nao existe', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(atualizarUseCase.execute('uuid-invalido', {})).rejects.toThrow(NotFoundException);
+      await expect(atualizarUseCase.execute('uuid-invalido', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

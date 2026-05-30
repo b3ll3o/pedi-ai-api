@@ -128,7 +128,9 @@ describe('UsuariosController', () => {
     });
 
     it('deve propagar erro quando usuario nao encontrado', async () => {
-      mockListarPorIdUseCase.execute.mockRejectedValue(new NotFoundException('Usuario nao encontrado'));
+      mockListarPorIdUseCase.execute.mockRejectedValue(
+        new NotFoundException('Usuario nao encontrado'),
+      );
 
       await expect(controller.listarUm('uuid-invalido')).rejects.toThrow(NotFoundException);
     });

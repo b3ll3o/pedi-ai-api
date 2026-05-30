@@ -113,7 +113,9 @@ describe('PermissoesController', () => {
     });
 
     it('deve propagar erro quando permissao nao encontrada', async () => {
-      mockListarPorIdUseCase.execute.mockRejectedValue(new NotFoundException('Permissao nao encontrada'));
+      mockListarPorIdUseCase.execute.mockRejectedValue(
+        new NotFoundException('Permissao nao encontrada'),
+      );
 
       await expect(controller.listarUm('uuid-invalido')).rejects.toThrow(NotFoundException);
     });

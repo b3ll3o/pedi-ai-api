@@ -1,41 +1,14 @@
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '../../.env.e2e' });
-
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { PrismaService } from '../../src/infrastructure/database/prisma/prisma.service';
+import { setupTestApp } from './app.helper';
 
 describe('Permissoes E2E', () => {
-  let app: INestApplication;
+  let app: Awaited<ReturnType<typeof setupTestApp>>['app'];
+  let authToken: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
-
-    const prisma = app.get(PrismaService);
-    await prisma.user.deleteMany({});
-    // Limpar associacoes atraves de perfis e permissoes
-    await prisma.perfil.updateMany({
-      data: { deletedAt: new Date() }
-    });
-    await prisma.permissao.updateMany({
-      data: { deletedAt: new Date() }
-    });
-    await prisma.perfil.deleteMany({});
-    await prisma.permissao.deleteMany({});
+    const setup = await setupTestApp();
+    app = setup.app;
+    authToken = setup.authToken;
   });
 
   afterAll(async () => {
@@ -46,6 +19,7 @@ describe('Permissoes E2E', () => {
     it('deve criar permissao com dados validos', async () => {
       const resposta = await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Criar Usuario',
           chave: 'usuario:criar',
@@ -61,6 +35,7 @@ describe('Permissoes E2E', () => {
     it('deve retornar 409 para nome duplicado', async () => {
       await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Nome Duplicado',
           chave: 'teste:duplicado1',
@@ -69,6 +44,7 @@ describe('Permissoes E2E', () => {
 
       await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Nome Duplicado',
           chave: 'teste:duplicado2',
@@ -79,6 +55,7 @@ describe('Permissoes E2E', () => {
     it('deve retornar 409 para chave duplicada', async () => {
       await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Nome Diferente 1',
           chave: 'chave:unica1',
@@ -87,6 +64,7 @@ describe('Permissoes E2E', () => {
 
       await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Nome Diferente 2',
           chave: 'chave:unica1',
@@ -97,6 +75,7 @@ describe('Permissoes E2E', () => {
     it('deve retornar 400 para chave com formato invalido', async () => {
       await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Permissao Invalida',
           chave: 'formato-invalido',
@@ -109,6 +88,7 @@ describe('Permissoes E2E', () => {
     it('deve listar todas as permissoes ativas', async () => {
       const resposta = await request(app.getHttpServer())
         .get('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(Array.isArray(resposta.body)).toBe(true);
@@ -119,6 +99,7 @@ describe('Permissoes E2E', () => {
     it('deve buscar permissao por ID', async () => {
       const criado = await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Permissao para Busca',
           chave: 'busca:teste',
@@ -127,6 +108,7 @@ describe('Permissoes E2E', () => {
 
       const resposta = await request(app.getHttpServer())
         .get(`/permissoes/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(resposta.body.id).toBe(criado.body.id);
@@ -135,6 +117,7 @@ describe('Permissoes E2E', () => {
     it('deve retornar 404 para ID inexistente', async () => {
       await request(app.getHttpServer())
         .get('/permissoes/uuid-inexistente-12345')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });
@@ -143,6 +126,7 @@ describe('Permissoes E2E', () => {
     it('deve atualizar apenas campos fornecidos', async () => {
       const criado = await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Permissao para Atualizar',
           chave: 'atualizar:original',
@@ -152,6 +136,7 @@ describe('Permissoes E2E', () => {
 
       const resposta = await request(app.getHttpServer())
         .patch(`/permissoes/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ nome: 'Nome Atualizado' })
         .expect(200);
 
@@ -164,6 +149,7 @@ describe('Permissoes E2E', () => {
     it('deve fazer soft-delete de permissao', async () => {
       const criado = await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Permissao para Deletar',
           chave: 'deletar:teste',
@@ -172,10 +158,12 @@ describe('Permissoes E2E', () => {
 
       await request(app.getHttpServer())
         .delete(`/permissoes/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(204);
 
       await request(app.getHttpServer())
         .get(`/permissoes/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });

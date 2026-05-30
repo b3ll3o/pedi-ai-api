@@ -112,22 +112,26 @@ describe('RestaurantesController', () => {
     const result = await controller.listarUm('123e4567-e89b-12d3-a456-426614174000');
 
     expect(result).toEqual(mockRestauranteResponse);
-    expect(mockListarPorIdUseCase.execute).toHaveBeenCalledWith('123e4567-e89b-12d3-a456-426614174000');
+    expect(mockListarPorIdUseCase.execute).toHaveBeenCalledWith(
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
   });
 
   it('deve listar restaurante por ID inexistente (404)', async () => {
     mockListarPorIdUseCase.execute.mockRejectedValue(new Error('Restaurante não encontrado'));
 
-    await expect(
-      controller.listarUm('non-existent-id'),
-    ).rejects.toThrow('Restaurante não encontrado');
+    await expect(controller.listarUm('non-existent-id')).rejects.toThrow(
+      'Restaurante não encontrado',
+    );
   });
 
   it('deve atualizar restaurante (200)', async () => {
     const updatedResponse = { ...mockRestauranteResponse, nome: 'Novo Nome' };
     mockAtualizarUseCase.execute.mockResolvedValue(updatedResponse);
 
-    const result = await controller.atualizar('123e4567-e89b-12d3-a456-426614174000', { nome: 'Novo Nome' });
+    const result = await controller.atualizar('123e4567-e89b-12d3-a456-426614174000', {
+      nome: 'Novo Nome',
+    });
 
     expect(result.nome).toBe('Novo Nome');
   });

@@ -67,10 +67,7 @@ describe('RolesAuthGuard', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        Reflector,
-        { provide: IPERFIS_REPOSITORY, useValue: mockPerfisRepository },
-      ],
+      providers: [Reflector, { provide: IPERFIS_REPOSITORY, useValue: mockPerfisRepository }],
     }).compile();
 
     reflector = module.get<Reflector>(Reflector);
@@ -151,7 +148,9 @@ describe('RolesAuthGuard', () => {
 
     it('acesso liberado quando multiplos roles definidos e usuario tem um deles', async () => {
       const TestableRolesAuthGuard = createTestableGuard(true);
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([Roles.ADMIN, 'SUPER_ADMIN' as Roles]);
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([Roles.ADMIN, 'SUPER_ADMIN' as Roles]);
       mockPerfisRepository.findById.mockResolvedValue(mockPerfilAdmin);
 
       const guard = new TestableRolesAuthGuard(reflector, mockPerfisRepository);

@@ -28,10 +28,7 @@ describe('UsuariosRepositoryImpl', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        { provide: PrismaService, useValue: mockPrisma },
-        UsuariosRepositoryImpl,
-      ],
+      providers: [{ provide: PrismaService, useValue: mockPrisma }, UsuariosRepositoryImpl],
     }).compile();
 
     repository = module.get<UsuariosRepositoryImpl>(UsuariosRepositoryImpl);

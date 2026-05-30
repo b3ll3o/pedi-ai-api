@@ -1,4 +1,14 @@
-import { Controller, Post, Body, UseGuards, Get, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Req,
+  UnauthorizedException,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from '../../application/auth/dto/login.dto';
 import { RefreshTokenDto } from '../../application/auth/dto/refresh-token.dto';
@@ -17,6 +27,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -42,13 +53,16 @@ export class AuthController {
   @Get('me')
   async me(@Req() req: AuthenticatedRequest) {
     const usuario = await this.authService.validateUser(req.user.userId);
+    if (!usuario) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
     return {
-      id: usuario?.id,
-      nome: usuario?.nome,
-      email: usuario?.email,
-      perfil: usuario?.perfilId ? { id: usuario.perfilId } : null,
-      createdAt: usuario?.createdAt,
-      updatedAt: usuario?.updatedAt,
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      perfil: usuario.perfilId ? { id: usuario.perfilId } : null,
+      createdAt: usuario.createdAt,
+      updatedAt: usuario.updatedAt,
     };
   }
 }

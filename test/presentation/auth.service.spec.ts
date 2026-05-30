@@ -73,7 +73,9 @@ describe('AuthService', () => {
     it('deve retornar tokens quando credenciais forem válidas', async () => {
       mockUsuariosRepository.findByEmail.mockResolvedValue(mockUsuario);
       mockSenhaHashService.compare.mockResolvedValue(true);
-      mockJwtService.signAsync.mockResolvedValueOnce('access-token').mockResolvedValueOnce('refresh-token');
+      mockJwtService.signAsync
+        .mockResolvedValueOnce('access-token')
+        .mockResolvedValueOnce('refresh-token');
       mockRefreshTokenRepository.create.mockResolvedValue({} as any);
 
       const result = await authService.login(loginDto);
@@ -132,13 +134,17 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('accessToken', 'new-access-token');
       expect(result).toHaveProperty('expiresIn', 900);
-      expect(mockRefreshTokenRepository.deleteByToken).toHaveBeenCalledWith(refreshTokenDto.refreshToken);
+      expect(mockRefreshTokenRepository.deleteByToken).toHaveBeenCalledWith(
+        refreshTokenDto.refreshToken,
+      );
     });
 
     it('deve lançar UnauthorizedException quando refresh token não existir', async () => {
       mockRefreshTokenRepository.findByToken.mockResolvedValue(null);
 
-      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('deve lançar UnauthorizedException quando refresh token estiver expirado', async () => {
@@ -154,7 +160,9 @@ describe('AuthService', () => {
       } as any);
       mockRefreshTokenRepository.deleteByToken.mockResolvedValue();
 
-      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('deve lançar UnauthorizedException quando usuário do refresh token não existir', async () => {
@@ -171,7 +179,9 @@ describe('AuthService', () => {
       mockRefreshTokenRepository.deleteByToken.mockResolvedValue();
       mockUsuariosRepository.findById.mockResolvedValue(null);
 
-      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 

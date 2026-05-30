@@ -143,13 +143,42 @@ describe('PerfisController', () => {
   describe('associarPermissoes', () => {
     it('deve associar permissoes ao perfil', async () => {
       const dto = { permissoesIds: ['uuid-1', 'uuid-2'] };
-      const perfilComPermissoes = { ...mockPerfil, permissoes: [{ id: 'uuid-1', nome: 'P1', chave: 'p1', descricao: '', createdAt: new Date(), updatedAt: new Date(), deletedAt: null, version: 1, perfis: [] }, { id: 'uuid-2', nome: 'P2', chave: 'p2', descricao: '', createdAt: new Date(), updatedAt: new Date(), deletedAt: null, version: 1, perfis: [] }] } as any;
+      const perfilComPermissoes = {
+        ...mockPerfil,
+        permissoes: [
+          {
+            id: 'uuid-1',
+            nome: 'P1',
+            chave: 'p1',
+            descricao: '',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            deletedAt: null,
+            version: 1,
+            perfis: [],
+          },
+          {
+            id: 'uuid-2',
+            nome: 'P2',
+            chave: 'p2',
+            descricao: '',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            deletedAt: null,
+            version: 1,
+            perfis: [],
+          },
+        ],
+      } as any;
       mockAssociarUseCase.execute.mockResolvedValue(perfilComPermissoes);
 
       const resultado = await controller.associarPermissoes('uuid-perfil-test', dto);
 
       expect(resultado).toEqual(perfilComPermissoes);
-      expect(mockAssociarUseCase.execute).toHaveBeenCalledWith('uuid-perfil-test', dto.permissoesIds);
+      expect(mockAssociarUseCase.execute).toHaveBeenCalledWith(
+        'uuid-perfil-test',
+        dto.permissoesIds,
+      );
     });
   });
 
@@ -159,7 +188,10 @@ describe('PerfisController', () => {
 
       await controller.desassociarPermissao('uuid-perfil-test', 'uuid-permissao');
 
-      expect(mockDesassociarUseCase.execute).toHaveBeenCalledWith('uuid-perfil-test', 'uuid-permissao');
+      expect(mockDesassociarUseCase.execute).toHaveBeenCalledWith(
+        'uuid-perfil-test',
+        'uuid-permissao',
+      );
     });
   });
 });

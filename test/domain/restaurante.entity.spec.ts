@@ -123,7 +123,9 @@ describe('RestauranteEntity', () => {
         horarioFechamento: '09:00', // fechamento antes da abertura
       };
 
-      expect(() => new RestauranteEntity(data)).toThrow('Horário de abertura deve ser anterior ao fechamento');
+      expect(() => new RestauranteEntity(data)).toThrow(
+        'Horário de abertura deve ser anterior ao fechamento',
+      );
     });
 
     it('deve lançar erro quando horário abertura = fechamento', () => {
@@ -138,7 +140,9 @@ describe('RestauranteEntity', () => {
         horarioFechamento: '09:00', // igual
       };
 
-      expect(() => new RestauranteEntity(data)).toThrow('Horário de abertura deve ser anterior ao fechamento');
+      expect(() => new RestauranteEntity(data)).toThrow(
+        'Horário de abertura deve ser anterior ao fechamento',
+      );
     });
   });
 

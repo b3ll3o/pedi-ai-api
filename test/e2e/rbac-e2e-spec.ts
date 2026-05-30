@@ -108,10 +108,7 @@ describe('RBAC E2E', () => {
 
       expect(created.body.id).toBeDefined();
 
-      await request(app.getHttpServer())
-        .get('/restaurants')
-        .set(headers)
-        .expect(200);
+      await request(app.getHttpServer()).get('/restaurants').set(headers).expect(200);
 
       await request(app.getHttpServer())
         .get(`/restaurants/${created.body.id}`)

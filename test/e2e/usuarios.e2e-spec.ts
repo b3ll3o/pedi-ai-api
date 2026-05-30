@@ -1,33 +1,14 @@
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '../../.env.e2e' });
-
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { PrismaService } from '../../src/infrastructure/database/prisma/prisma.service';
+import { setupTestApp } from './app.helper';
 
 describe('Usuarios E2E', () => {
-  let app: INestApplication;
+  let app: Awaited<ReturnType<typeof setupTestApp>>['app'];
+  let authToken: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
-
-    // Limpar banco de dados antes dos testes E2E
-    const prisma = app.get(PrismaService);
-    await prisma.user.deleteMany({});
+    const setup = await setupTestApp();
+    app = setup.app;
+    authToken = setup.authToken;
   });
 
   afterAll(async () => {
@@ -38,6 +19,7 @@ describe('Usuarios E2E', () => {
     it('deve criar usuario com dados validos', async () => {
       const resposta = await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Usuario E2E',
           email: 'e2e@exemplo.com',
@@ -54,6 +36,7 @@ describe('Usuarios E2E', () => {
     it('deve retornar 409 para email duplicado', async () => {
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Usuario Duplicado',
           email: 'duplicado@exemplo.com',
@@ -63,6 +46,7 @@ describe('Usuarios E2E', () => {
 
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Outro Usuario',
           email: 'duplicado@exemplo.com',
@@ -74,6 +58,7 @@ describe('Usuarios E2E', () => {
     it('deve retornar 400 para dados invalidos', async () => {
       await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Usuario Invalido',
           email: 'email-invalido',
@@ -87,6 +72,7 @@ describe('Usuarios E2E', () => {
     it('deve listar todos os usuarios ativos', async () => {
       const resposta = await request(app.getHttpServer())
         .get('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(Array.isArray(resposta.body)).toBe(true);
@@ -100,6 +86,7 @@ describe('Usuarios E2E', () => {
     it('deve buscar usuario por ID', async () => {
       const criado = await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Usuario para Busca',
           email: 'busca@exemplo.com',
@@ -109,6 +96,7 @@ describe('Usuarios E2E', () => {
 
       const resposta = await request(app.getHttpServer())
         .get(`/users/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(resposta.body.id).toBe(criado.body.id);
@@ -118,6 +106,7 @@ describe('Usuarios E2E', () => {
     it('deve retornar 404 para ID inexistente', async () => {
       await request(app.getHttpServer())
         .get('/users/uuid-inexistente-12345')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });
@@ -126,6 +115,7 @@ describe('Usuarios E2E', () => {
     it('deve buscar usuario por email', async () => {
       const resposta = await request(app.getHttpServer())
         .get('/users/email/e2e@exemplo.com')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(resposta.body.email).toBe('e2e@exemplo.com');
@@ -135,6 +125,7 @@ describe('Usuarios E2E', () => {
     it('deve retornar 404 para email inexistente', async () => {
       await request(app.getHttpServer())
         .get('/users/email/naoexiste@exemplo.com')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });
@@ -143,6 +134,7 @@ describe('Usuarios E2E', () => {
     it('deve atualizar apenas campos fornecidos', async () => {
       const criado = await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Usuario para Atualizar',
           email: 'atualizar@exemplo.com',
@@ -152,6 +144,7 @@ describe('Usuarios E2E', () => {
 
       const resposta = await request(app.getHttpServer())
         .patch(`/users/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ nome: 'Nome Atualizado' })
         .expect(200);
 
@@ -164,6 +157,7 @@ describe('Usuarios E2E', () => {
     it('deve fazer soft-delete de usuario', async () => {
       const criado = await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Usuario para Deletar',
           email: 'deletar@exemplo.com',
@@ -173,10 +167,12 @@ describe('Usuarios E2E', () => {
 
       await request(app.getHttpServer())
         .delete(`/users/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(204);
 
       await request(app.getHttpServer())
         .get(`/users/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });

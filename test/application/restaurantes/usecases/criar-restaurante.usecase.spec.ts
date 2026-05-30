@@ -1,5 +1,8 @@
 import { CriarRestauranteUseCase } from '../../../../src/restaurante/application/use-cases/criar-restaurante.usecase';
-import { IRestaurantesRepository, CreateRestauranteInput } from '../../../../src/restaurante/domain/repositories/restaurantes-repository.interface';
+import {
+  IRestaurantesRepository,
+  CreateRestauranteInput,
+} from '../../../../src/restaurante/domain/repositories/restaurantes-repository.interface';
 
 describe('CriarRestauranteUseCase', () => {
   let mockRepository: jest.Mocked<IRestaurantesRepository>;

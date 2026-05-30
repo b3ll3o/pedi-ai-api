@@ -71,9 +71,7 @@ describe('Auth E2E', () => {
 
   describe('GET /auth/me', () => {
     it('deve retornar 401 sem token', async () => {
-      await request(app.getHttpServer())
-        .get('/auth/me')
-        .expect(401);
+      await request(app.getHttpServer()).get('/auth/me').expect(401);
     });
 
     it('deve retornar 200 com token valido e dados do usuario', async () => {

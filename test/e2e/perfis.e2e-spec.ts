@@ -1,45 +1,14 @@
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '../../.env.e2e' });
-
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { PrismaService } from '../../src/infrastructure/database/prisma/prisma.service';
+import { setupTestApp } from './app.helper';
 
 describe('Perfis E2E', () => {
-  let app: INestApplication;
+  let app: Awaited<ReturnType<typeof setupTestApp>>['app'];
+  let authToken: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
-
-    const prisma = app.get(PrismaService);
-    // Limpar usuarios primeiro (quebrando relacao com perfis)
-    await prisma.user.deleteMany({});
-    // Deletar relacionamentos via perfis ( junction table)
-    await prisma.perfil.updateMany({
-      data: { deletedAt: new Date() }
-    });
-    await prisma.permissao.updateMany({
-      data: { deletedAt: new Date() }
-    });
-    // Deletar perfis e permissoes (cascade deve limpar junction)
-    await prisma.perfil.deleteMany({});
-    await prisma.permissao.deleteMany({});
-    // Garantir que permissoes estao limpas
-    await prisma.permissao.deleteMany({});
+    const setup = await setupTestApp();
+    app = setup.app;
+    authToken = setup.authToken;
   });
 
   afterAll(async () => {
@@ -50,6 +19,7 @@ describe('Perfis E2E', () => {
     it('deve criar perfil com dados validos', async () => {
       const resposta = await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil Admin',
           descricao: 'Perfil de administrador',
@@ -63,6 +33,7 @@ describe('Perfis E2E', () => {
     it('deve retornar 409 para nome duplicado', async () => {
       await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil Duplicado',
           descricao: 'Teste',
@@ -71,6 +42,7 @@ describe('Perfis E2E', () => {
 
       await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil Duplicado',
           descricao: 'Outro',
@@ -83,6 +55,7 @@ describe('Perfis E2E', () => {
     it('deve listar todos os perfis ativos', async () => {
       const resposta = await request(app.getHttpServer())
         .get('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(Array.isArray(resposta.body)).toBe(true);
@@ -93,6 +66,7 @@ describe('Perfis E2E', () => {
     it('deve buscar perfil por ID', async () => {
       const criado = await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil para Busca',
           descricao: 'Teste',
@@ -101,6 +75,7 @@ describe('Perfis E2E', () => {
 
       const resposta = await request(app.getHttpServer())
         .get(`/perfis/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(resposta.body.id).toBe(criado.body.id);
@@ -109,6 +84,7 @@ describe('Perfis E2E', () => {
     it('deve retornar 404 para ID inexistente', async () => {
       await request(app.getHttpServer())
         .get('/perfis/uuid-inexistente-12345')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });
@@ -117,6 +93,7 @@ describe('Perfis E2E', () => {
     it('deve atualizar apenas campos fornecidos', async () => {
       const criado = await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil para Atualizar',
           descricao: 'Original',
@@ -125,6 +102,7 @@ describe('Perfis E2E', () => {
 
       const resposta = await request(app.getHttpServer())
         .patch(`/perfis/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ nome: 'Nome Atualizado' })
         .expect(200);
 
@@ -137,6 +115,7 @@ describe('Perfis E2E', () => {
     it('deve fazer soft-delete de perfil', async () => {
       const criado = await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil para Deletar',
           descricao: 'Teste',
@@ -145,10 +124,12 @@ describe('Perfis E2E', () => {
 
       await request(app.getHttpServer())
         .delete(`/perfis/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(204);
 
       await request(app.getHttpServer())
         .get(`/perfis/${criado.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
   });
@@ -157,6 +138,7 @@ describe('Perfis E2E', () => {
     it('deve associar permissoes ao perfil', async () => {
       const permissao = await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Criar Usuario',
           chave: 'perfil:associar',
@@ -166,6 +148,7 @@ describe('Perfis E2E', () => {
 
       const perfil = await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil com Permissao',
           descricao: 'Teste',
@@ -174,6 +157,7 @@ describe('Perfis E2E', () => {
 
       const resposta = await request(app.getHttpServer())
         .post(`/perfis/${perfil.body.id}/permissoes`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ permissoesIds: [permissao.body.id] })
         .expect(201);
 
@@ -186,6 +170,7 @@ describe('Perfis E2E', () => {
     it('deve desassociar permissao do perfil', async () => {
       const permissao = await request(app.getHttpServer())
         .post('/permissoes')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Listar Usuario',
           chave: 'perfil:desassociar',
@@ -195,6 +180,7 @@ describe('Perfis E2E', () => {
 
       const perfil = await request(app.getHttpServer())
         .post('/perfis')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           nome: 'Perfil para Desassociar',
           descricao: 'Teste',
@@ -203,11 +189,13 @@ describe('Perfis E2E', () => {
 
       await request(app.getHttpServer())
         .post(`/perfis/${perfil.body.id}/permissoes`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ permissoesIds: [permissao.body.id] })
         .expect(201);
 
       await request(app.getHttpServer())
         .delete(`/perfis/${perfil.body.id}/permissoes/${permissao.body.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(204);
     });
   });

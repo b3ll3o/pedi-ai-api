@@ -43,10 +43,7 @@ describe('PerfisRepositoryImpl', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        { provide: PrismaService, useValue: mockPrisma },
-        PerfisRepositoryImpl,
-      ],
+      providers: [{ provide: PrismaService, useValue: mockPrisma }, PerfisRepositoryImpl],
     }).compile();
 
     repository = module.get<PerfisRepositoryImpl>(PerfisRepositoryImpl);
@@ -211,7 +208,10 @@ describe('PerfisRepositoryImpl', () => {
       const permissoes = [mockPermissao, mockPermissao];
       mockPrisma.permissao.findMany.mockResolvedValue(permissoes);
 
-      const resultado = await repository.findPermissoesByIds(['uuid-permissao-1', 'uuid-permissao-2']);
+      const resultado = await repository.findPermissoesByIds([
+        'uuid-permissao-1',
+        'uuid-permissao-2',
+      ]);
 
       expect(resultado).toHaveLength(2);
       expect(mockPrisma.permissao.findMany).toHaveBeenCalledWith({

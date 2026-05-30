@@ -153,15 +153,23 @@ describe('PerfisUseCases', () => {
     it('deve lancar ConflictException quando nome duplicado', async () => {
       const dto = { nome: 'Nome Duplicado' };
       mockRepository.findById.mockResolvedValue(mockPerfil);
-      mockRepository.findByNome.mockResolvedValue({ ...mockPerfil, id: 'outro-id', nome: 'Nome Duplicado' });
+      mockRepository.findByNome.mockResolvedValue({
+        ...mockPerfil,
+        id: 'outro-id',
+        nome: 'Nome Duplicado',
+      });
 
-      await expect(atualizarUseCase.execute('uuid-perfil-test', dto)).rejects.toThrow(ConflictException);
+      await expect(atualizarUseCase.execute('uuid-perfil-test', dto)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('deve lancar NotFoundException quando perfil nao existe', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(atualizarUseCase.execute('uuid-invalido', { nome: 'teste' })).rejects.toThrow(NotFoundException);
+      await expect(atualizarUseCase.execute('uuid-invalido', { nome: 'teste' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -191,11 +199,17 @@ describe('PerfisUseCases', () => {
 
       mockRepository.findById.mockResolvedValue(mockPerfil);
       mockRepository.findPermissoesByIds.mockResolvedValue(permissoes as any);
-      mockRepository.associarPermissoes.mockResolvedValue({ ...mockPerfil, permissoes: permissoes } as any);
+      mockRepository.associarPermissoes.mockResolvedValue({
+        ...mockPerfil,
+        permissoes: permissoes,
+      } as any);
 
       const resultado = await associarUseCase.execute('uuid-perfil-test', permissoesIds);
 
-      expect(mockRepository.associarPermissoes).toHaveBeenCalledWith('uuid-perfil-test', permissoesIds);
+      expect(mockRepository.associarPermissoes).toHaveBeenCalledWith(
+        'uuid-perfil-test',
+        permissoesIds,
+      );
     });
 
     it('deve lancar NotFoundException quando perfil nao existe', async () => {
@@ -208,7 +222,9 @@ describe('PerfisUseCases', () => {
       mockRepository.findById.mockResolvedValue(mockPerfil);
       mockRepository.findPermissoesByIds.mockResolvedValue([]);
 
-      await expect(associarUseCase.execute('uuid-perfil-test', ['uuid-inexistente'])).rejects.toThrow(NotFoundException);
+      await expect(
+        associarUseCase.execute('uuid-perfil-test', ['uuid-inexistente']),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -219,13 +235,18 @@ describe('PerfisUseCases', () => {
 
       await desassociarUseCase.execute('uuid-perfil-test', 'uuid-permissao');
 
-      expect(mockRepository.desassociarPermissao).toHaveBeenCalledWith('uuid-perfil-test', 'uuid-permissao');
+      expect(mockRepository.desassociarPermissao).toHaveBeenCalledWith(
+        'uuid-perfil-test',
+        'uuid-permissao',
+      );
     });
 
     it('deve lancar NotFoundException quando perfil nao existe', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(desassociarUseCase.execute('uuid-invalido', 'uuid-permissao')).rejects.toThrow(NotFoundException);
+      await expect(desassociarUseCase.execute('uuid-invalido', 'uuid-permissao')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

@@ -12,6 +12,8 @@ describe('JwtStrategy', () => {
   };
 
   beforeEach(async () => {
+    process.env.JWT_SECRET = 'test-secret-key-for-testing-purposes-only';
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JwtStrategy,
@@ -25,6 +27,10 @@ describe('JwtStrategy', () => {
     strategy = module.get<JwtStrategy>(JwtStrategy);
     authService = module.get(AuthService);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    delete process.env.JWT_SECRET;
   });
 
   it('should be defined', () => {

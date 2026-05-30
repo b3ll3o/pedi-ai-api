@@ -1,5 +1,4 @@
 import { PrismaService } from '../../src/infrastructure/database/prisma/prisma.service';
-import { PrismaClient } from '@prisma/client';
 
 jest.mock('@prisma/client', () => {
   const mockPrismaClient = {
@@ -8,6 +7,18 @@ jest.mock('@prisma/client', () => {
   };
   return {
     PrismaClient: jest.fn().mockImplementation(() => mockPrismaClient),
+  };
+});
+
+jest.mock('@prisma/adapter-pg', () => {
+  return {
+    PrismaPg: jest.fn().mockImplementation(() => ({})),
+  };
+});
+
+jest.mock('pg', () => {
+  return {
+    Pool: jest.fn().mockImplementation(() => ({})),
   };
 });
 
@@ -32,15 +43,15 @@ describe('PrismaService', () => {
     });
 
     it('deve aceitar DATABASE_URL valida', () => {
-      process.env.DATABASE_URL = 'postgresql:// usuario:senha@localhost:5432/pediai';
+      process.env.DATABASE_URL = 'postgresql://usuario:senha@localhost:5432/pediai';
 
       expect(() => new PrismaService()).not.toThrow();
     });
   });
 
-  describe('继承 PrismaClient', () => {
+  describe('metodos herdados', () => {
     it('deve ter metodos $connect e $disconnect', () => {
-      process.env.DATABASE_URL = 'postgresql:// usuario:senha@localhost:5432/pediai';
+      process.env.DATABASE_URL = 'postgresql://usuario:senha@localhost:5432/pediai';
       const service = new PrismaService();
 
       expect(typeof service.$connect).toBe('function');

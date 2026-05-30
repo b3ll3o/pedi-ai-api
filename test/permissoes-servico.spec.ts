@@ -81,7 +81,10 @@ describe('PermissoesUseCases', () => {
         descricao: 'Permite criar usuarios',
       };
 
-      mockRepository.findByNomeOrChave.mockResolvedValue({ ...mockPermissao, nome: 'Nome Diferente' });
+      mockRepository.findByNomeOrChave.mockResolvedValue({
+        ...mockPermissao,
+        nome: 'Nome Diferente',
+      });
 
       await expect(criarUseCase.execute(dto)).rejects.toThrow(ConflictException);
     });
@@ -137,7 +140,9 @@ describe('PermissoesUseCases', () => {
     it('deve lancar NotFoundException quando permissao nao existe', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(atualizarUseCase.execute('uuid-invalido', { nome: 'teste' })).rejects.toThrow(NotFoundException);
+      await expect(atualizarUseCase.execute('uuid-invalido', { nome: 'teste' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

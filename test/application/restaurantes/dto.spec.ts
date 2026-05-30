@@ -1,6 +1,9 @@
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
-import { CriarRestauranteDto, AtualizarRestauranteDto } from '../../../src/restaurante/application/dto/restaurante.dto';
+import {
+  CriarRestauranteDto,
+  AtualizarRestauranteDto,
+} from '../../../src/restaurante/application/dto/restaurante.dto';
 
 describe('RestauranteDto', () => {
   describe('CriarRestauranteDto', () => {
@@ -53,7 +56,7 @@ describe('RestauranteDto', () => {
 
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
-      const estadoError = errors.find(e => e.property === 'estado');
+      const estadoError = errors.find((e) => e.property === 'estado');
       expect(estadoError).toBeDefined();
     });
 

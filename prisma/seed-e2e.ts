@@ -33,8 +33,8 @@ async function seed() {
     }
 
     // Criar usuário admin se não existir
-    const adminEmail = 'admin_e2e_seed@pedi.ai';
-    const adminSenha = 'AdminSeed123!';
+    const adminEmail = 'admin@pediai.com';
+    const adminSenha = 'PediAi@01';
     const senhaHash = await bcrypt.hash(adminSenha, SALT_ROUNDS);
 
     let usuarioAdmin = await prisma.user.findUnique({
@@ -45,7 +45,7 @@ async function seed() {
       console.log('📝 Criando usuário admin...');
       usuarioAdmin = await prisma.user.create({
         data: {
-          nome: 'Admin E2E Seed',
+          nome: 'Pedi Ai Admin',
           email: adminEmail,
           senha: senhaHash,
           perfilId: perfilAdmin.id,

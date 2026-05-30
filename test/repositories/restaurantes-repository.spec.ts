@@ -1,5 +1,8 @@
 import { RestaurantesRepositoryImpl } from '../../src/restaurante/infrastructure/persistence/restaurantes-repository.impl';
-import { CreateRestauranteInput, UpdateRestauranteInput } from '../../src/restaurante/domain/repositories/restaurantes-repository.interface';
+import {
+  CreateRestauranteInput,
+  UpdateRestauranteInput,
+} from '../../src/restaurante/domain/repositories/restaurantes-repository.interface';
 
 describe('RestaurantesRepositoryImpl', () => {
   let mockPrisma: any;
@@ -143,7 +146,10 @@ describe('RestaurantesRepositoryImpl', () => {
 
   describe('softDelete', () => {
     it('deve fazer soft delete do restaurante', async () => {
-      mockPrisma.restaurante.update.mockResolvedValue({ ...mockRestaurante, deletedAt: new Date() });
+      mockPrisma.restaurante.update.mockResolvedValue({
+        ...mockRestaurante,
+        deletedAt: new Date(),
+      });
 
       await repository.softDelete(mockRestaurante.id);
 

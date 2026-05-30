@@ -20,7 +20,7 @@ import { SenhaHashService } from '../../domain/services/senha-hash.service';
     PassportModule,
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'pedi-ai-jwt-secret-key-minimo-256-bits-para-seguranca',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: 900 },
     }),
   ],
