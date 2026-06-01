@@ -4,8 +4,8 @@ set -e
 echo "Aguardando banco de dados estar pronto..."
 
 # Aguardar o PostgreSQL respondendo na porta 5432
-until nc -z e2e_postgres 5432 2>/dev/null; do
-  echo "Aguardando e2e_postgres na porta 5432..."
+until nc -z postgres 5432 2>/dev/null; do
+  echo "Aguardando postgres na porta 5432..."
   sleep 1
 done
 
