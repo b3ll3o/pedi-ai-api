@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -23,6 +24,7 @@ import {
   CriarRestauranteDto,
   AtualizarRestauranteDto,
 } from '../../application/dto/restaurante.dto';
+import { parsePagination } from '../../../common/pagination';
 
 @UseGuards(JwtAuthGuard, RolesAuthGuard)
 @RolesDecorators(Roles.ADMIN)
@@ -42,8 +44,8 @@ export class RestaurantesController {
   }
 
   @Get()
-  async listarTodos() {
-    return this.listarRestaurantesUseCase.execute();
+  async listarTodos(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+    return this.listarRestaurantesUseCase.execute(parsePagination(page, pageSize));
   }
 
   @Get(':id')

@@ -47,7 +47,7 @@ export interface Restaurante {
 
 export interface IRestaurantesRepository {
   create(data: CreateRestauranteInput): Promise<Restaurante>;
-  findAll(): Promise<Restaurante[]>;
+  findAll(params?: { skip?: number; take?: number }): Promise<Restaurante[]>;
   findById(id: string): Promise<Restaurante | null>;
   findByCnpj(cnpj: string): Promise<Restaurante | null>;
   update(id: string, data: UpdateRestauranteInput): Promise<Restaurante>;

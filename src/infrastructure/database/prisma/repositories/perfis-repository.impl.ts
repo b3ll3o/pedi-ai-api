@@ -27,10 +27,13 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
     return perfil as Perfil | null;
   }
 
-  async findAll(): Promise<Perfil[]> {
+  async findAll(params?: { skip?: number; take?: number }): Promise<Perfil[]> {
     const perfis = await this.prisma.perfil.findMany({
       where: { deletedAt: null },
       include: { permissoes: true },
+      skip: params?.skip,
+      take: params?.take,
+      orderBy: { createdAt: 'desc' },
     });
     return perfis as Perfil[];
   }
@@ -44,7 +47,7 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
 
   async update(id: string, data: AtualizarPerfilParams): Promise<Perfil> {
     const perfil = await this.prisma.perfil.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data,
       include: { permissoes: true },
     });
@@ -59,11 +62,17 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
   }
 
   async associarPermissoes(id: string, permissoesIds: string[]): Promise<Perfil> {
+    // `set:` em vez de `connect:` para garantir idempotência em retries /
+    // re-chamadas. `connect` em Prisma é idempotente em versões recentes, mas
+    // `set` é a API documentada para "definir a lista exata" e elimina
+    // ambiguidade. `deletedAt: null` no where é salvaguarda: o use-case já
+    // valida com findById antes, mas sem o filtro o `set` executaria em
+    // registro soft-deletado. P2025 → NotFoundException via use-case.
     const perfil = await this.prisma.perfil.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: {
         permissoes: {
-          connect: permissoesIds.map((id) => ({ id })),
+          set: permissoesIds.map((id) => ({ id })),
         },
       },
       include: { permissoes: true },

@@ -29,10 +29,13 @@ export class PermissoesRepositoryImpl implements IPermissoesRepository {
     return permissao as Permissao | null;
   }
 
-  async findAll(): Promise<Permissao[]> {
+  async findAll(params?: { skip?: number; take?: number }): Promise<Permissao[]> {
     const permissoes = await this.prisma.permissao.findMany({
       where: { deletedAt: null },
       include: { perfis: true },
+      skip: params?.skip,
+      take: params?.take,
+      orderBy: { createdAt: 'desc' },
     });
     return permissoes as Permissao[];
   }
@@ -46,7 +49,7 @@ export class PermissoesRepositoryImpl implements IPermissoesRepository {
 
   async update(id: string, data: AtualizarPermissaoParams): Promise<Permissao> {
     const permissao = await this.prisma.permissao.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data,
       include: { perfis: true },
     });

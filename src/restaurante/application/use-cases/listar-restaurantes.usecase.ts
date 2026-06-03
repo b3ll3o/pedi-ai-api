@@ -10,12 +10,8 @@ export class ListarRestaurantesUseCase {
     @Inject(IRESTAURANTES_REPOSITORY) private readonly repository: IRestaurantesRepository,
   ) {}
 
-  async execute(): Promise<RestauranteResponseDto[]> {
-    try {
-      const restaurantes = await this.repository.findAll();
-      return restaurantes.map((r) => RestauranteResponseDto.fromEntity(r));
-    } catch (error) {
-      throw error;
-    }
+  async execute(params?: { skip?: number; take?: number }): Promise<RestauranteResponseDto[]> {
+    const restaurantes = await this.repository.findAll(params);
+    return restaurantes.map((r) => RestauranteResponseDto.fromEntity(r));
   }
 }

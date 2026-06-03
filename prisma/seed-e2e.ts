@@ -32,6 +32,23 @@ async function seed() {
       console.log(`✅ Perfil ADMIN já existe com ID: ${perfilAdmin.id}`);
     }
 
+    // Criar perfil USUARIO (default para self-register) se não existir
+    let perfilUsuario = await prisma.perfil.findFirst({
+      where: { nome: 'USUARIO', deletedAt: null },
+    });
+    if (!perfilUsuario) {
+      console.log('📝 Criando perfil USUARIO...');
+      perfilUsuario = await prisma.perfil.create({
+        data: {
+          nome: 'USUARIO',
+          descricao: 'Perfil de usuário comum (default para self-register)',
+        },
+      });
+      console.log(`✅ Perfil USUARIO criado com ID: ${perfilUsuario.id}`);
+    } else {
+      console.log(`✅ Perfil USUARIO já existe com ID: ${perfilUsuario.id}`);
+    }
+
     // Criar usuário admin se não existir
     const adminEmail = 'admin@pediai.com';
     const adminSenha = 'PediAi@01';

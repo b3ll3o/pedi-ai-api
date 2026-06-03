@@ -7,7 +7,7 @@ import {
 export class ListarPerfisUseCase {
   constructor(@Inject(IPERFIS_REPOSITORY) private readonly perfisRepository: IPerfisRepository) {}
 
-  async execute() {
-    return this.perfisRepository.findAll();
+  async execute(params?: { skip?: number; take?: number }) {
+    return this.perfisRepository.findAll(params);
   }
 }

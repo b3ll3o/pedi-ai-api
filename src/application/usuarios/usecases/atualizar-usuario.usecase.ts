@@ -1,4 +1,4 @@
-import { NotFoundException, Inject } from '@nestjs/common';
+import { NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import {
   IUsuariosRepository,
   IUSUARIOS_REPOSITORY,
@@ -8,6 +8,7 @@ import {
   ISENHA_HASH_SERVICE,
 } from '../../../domain/services/senha-hash.service';
 import { AtualizarUsuarioParams } from '../../../domain/entities/usuario.entity';
+import { handlePrismaError } from '../../../common/prisma-errors';
 
 export class AtualizarUsuarioUseCase {
   constructor(
@@ -22,15 +23,29 @@ export class AtualizarUsuarioUseCase {
       throw new NotFoundException('Usuario nao encontrado');
     }
 
-    const updateData: any = { ...data };
+    if (data.email && data.email !== usuario.email) {
+      const emailNormalizado = data.email.toLowerCase().trim();
+      const colisao = await this.usuariosRepository.findByEmailIncludingDeleted(emailNormalizado);
+      if (colisao && colisao.id !== id) {
+        throw new ConflictException('Email ja cadastrado');
+      }
+      data.email = emailNormalizado;
+    }
+
+    const updateData: AtualizarUsuarioParams = { ...data };
 
     if (data.senha) {
       updateData.senha = await this.senhaHashService.hash(data.senha);
     }
 
-    const atualizado = await this.usuariosRepository.update(id, updateData);
+    let atualizado: Awaited<ReturnType<IUsuariosRepository['update']>>;
+    try {
+      atualizado = await this.usuariosRepository.update(id, updateData);
+    } catch (error) {
+      handlePrismaError(error, 'Email ja cadastrado', 'Usuario nao encontrado');
+    }
 
-    const { senha: _senha, ...resultado } = atualizado;
+    const { senha: _senha, ...resultado } = atualizado!;
     return resultado;
   }
 }

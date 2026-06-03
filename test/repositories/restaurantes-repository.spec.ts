@@ -73,6 +73,8 @@ describe('RestaurantesRepositoryImpl', () => {
       expect(mockPrisma.restaurante.findMany).toHaveBeenCalledWith({
         where: { deletedAt: null, ativo: true },
         orderBy: { nome: 'asc' },
+        skip: undefined,
+        take: undefined,
       });
     });
 
@@ -114,7 +116,7 @@ describe('RestaurantesRepositoryImpl', () => {
 
       expect(result).toEqual(mockRestaurante);
       expect(mockPrisma.restaurante.findUnique).toHaveBeenCalledWith({
-        where: { cnpj: mockRestaurante.cnpj },
+        where: { cnpj: mockRestaurante.cnpj, deletedAt: null },
       });
     });
 
@@ -138,7 +140,7 @@ describe('RestaurantesRepositoryImpl', () => {
 
       expect(result.nome).toBe('Novo Nome');
       expect(mockPrisma.restaurante.update).toHaveBeenCalledWith({
-        where: { id: mockRestaurante.id },
+        where: { id: mockRestaurante.id, deletedAt: null },
         data: updateData,
       });
     });
@@ -153,6 +155,8 @@ describe('RestaurantesRepositoryImpl', () => {
 
       await repository.softDelete(mockRestaurante.id);
 
+      // `ativo` deliberadamente NÃO é tocado: findAll já filtra por
+      // `ativo: true` e a saída da listagem é garantida pelo `deletedAt: null`.
       expect(mockPrisma.restaurante.update).toHaveBeenCalledWith({
         where: { id: mockRestaurante.id },
         data: { deletedAt: expect.any(Date) },

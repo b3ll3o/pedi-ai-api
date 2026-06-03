@@ -12,16 +12,16 @@ describe('SenhaHashService', () => {
   });
 
   describe('hash', () => {
-    it('deve gerar hash usando bcrypt com SALT_ROUNDS 10', async () => {
+    it('deve gerar hash usando bcrypt com SALT_ROUNDS 12', async () => {
       const senha = 'minhaSenha123';
-      const hashEsperado = '$2b$10$hashGerado';
+      const hashEsperado = '$2b$12$hashGerado';
 
       (bcrypt.hash as jest.Mock).mockResolvedValue(hashEsperado);
 
       const resultado = await service.hash(senha);
 
       expect(resultado).toBe(hashEsperado);
-      expect(bcrypt.hash).toHaveBeenCalledWith(senha, 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith(senha, 12);
     });
 
     it('deve chamar bcrypt.hash apenas uma vez', async () => {

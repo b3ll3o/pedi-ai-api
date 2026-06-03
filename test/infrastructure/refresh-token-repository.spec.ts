@@ -61,7 +61,9 @@ describe('RefreshTokenRepositoryImpl', () => {
       expect(resultado).toEqual(mockRefreshToken);
       expect(mockPrisma.refreshToken.findUnique).toHaveBeenCalledWith({
         where: { token: 'refresh-token-value' },
-        include: { user: true },
+        // `select` explícito em vez de `include: { user: true }` para
+        // nunca trazer o hash de senha em memória.
+        include: { user: { select: { id: true, perfilId: true, deletedAt: true } } },
       });
     });
 

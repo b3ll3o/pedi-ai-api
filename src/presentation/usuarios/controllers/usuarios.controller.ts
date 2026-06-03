@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -22,6 +23,7 @@ import { AtualizarUsuarioUseCase } from '../../../application/usuarios/usecases/
 import { DeletarUsuarioUseCase } from '../../../application/usuarios/usecases/deletar-usuario.usecase';
 import { CriarUsuarioDto } from '../../../application/usuarios/dto/criar-usuario.dto';
 import { AtualizarUsuarioDto } from '../../../application/usuarios/dto/atualizar-usuario.dto';
+import { parsePagination } from '../../../common/pagination';
 
 @UseGuards(JwtAuthGuard, RolesAuthGuard)
 @RolesDecorators(Roles.ADMIN)
@@ -42,8 +44,8 @@ export class UsuariosController {
   }
 
   @Get()
-  async listarTodos() {
-    return this.listarUsuariosUseCase.execute();
+  async listarTodos(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+    return this.listarUsuariosUseCase.execute(parsePagination(page, pageSize));
   }
 
   @Get(':id')

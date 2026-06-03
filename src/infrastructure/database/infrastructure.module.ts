@@ -4,6 +4,7 @@ import { UsuariosRepositoryImpl } from './prisma/repositories/usuarios-repositor
 import { PerfisRepositoryImpl } from './prisma/repositories/perfis-repository.impl';
 import { PermissoesRepositoryImpl } from './prisma/repositories/permissoes-repository.impl';
 import { RefreshTokenRepositoryImpl } from './prisma/repositories/refresh-token-repository.impl';
+import { TokenBlacklistService } from '../auth/token-blacklist.service';
 
 @Global()
 @Module({
@@ -13,12 +14,14 @@ import { RefreshTokenRepositoryImpl } from './prisma/repositories/refresh-token-
     PerfisRepositoryImpl,
     PermissoesRepositoryImpl,
     RefreshTokenRepositoryImpl,
+    TokenBlacklistService,
   ],
   exports: [
     UsuariosRepositoryImpl,
     PerfisRepositoryImpl,
     PermissoesRepositoryImpl,
     RefreshTokenRepositoryImpl,
+    TokenBlacklistService,
   ],
 })
 export class InfrastructureModule {}

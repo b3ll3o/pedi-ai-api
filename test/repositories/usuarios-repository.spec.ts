@@ -69,7 +69,7 @@ describe('UsuariosRepositoryImpl', () => {
 
       expect(resultado).toEqual(mockUsuario);
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'teste@exemplo.com' },
+        where: { email: 'teste@exemplo.com', deletedAt: null },
       });
     });
 
@@ -79,6 +79,19 @@ describe('UsuariosRepositoryImpl', () => {
       const resultado = await repository.findByEmail('naoexiste@exemplo.com');
 
       expect(resultado).toBeNull();
+    });
+  });
+
+  describe('findByEmailIncludingDeleted', () => {
+    it('deve retornar usuario mesmo se soft-deletado', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUsuario);
+
+      const resultado = await repository.findByEmailIncludingDeleted('teste@exemplo.com');
+
+      expect(resultado).toEqual(mockUsuario);
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'teste@exemplo.com' },
+      });
     });
   });
 
@@ -92,6 +105,9 @@ describe('UsuariosRepositoryImpl', () => {
       expect(resultado).toHaveLength(2);
       expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
         where: { deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        skip: undefined,
+        take: undefined,
       });
     });
 
@@ -131,7 +147,7 @@ describe('UsuariosRepositoryImpl', () => {
 
       expect(resultado).toEqual(usuarioAtualizado);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-test' },
+        where: { id: 'uuid-test', deletedAt: null },
         data: updateData,
       });
     });

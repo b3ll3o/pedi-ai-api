@@ -21,7 +21,9 @@ import { SenhaHashService } from '../../domain/services/senha-hash.service';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: 900 },
+      // signOptions.defaults removido: o TTL é controlado por auth.service.ts
+      // via process.env.JWT_EXPIRES_IN, então um default aqui só causaria
+      // confusão (ex: testes que esperam 15m recebendo 900s/15m por sorte).
     }),
   ],
   controllers: [AuthController],

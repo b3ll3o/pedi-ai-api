@@ -7,4 +7,15 @@ export interface IRefreshTokenRepository {
   findByToken(token: string): Promise<RefreshToken | null>;
   deleteByUserId(userId: string): Promise<void>;
   deleteByToken(token: string): Promise<void>;
+  /**
+   * Rotação atômica: deleta o token antigo e cria o novo dentro de uma transação
+   * para impedir race conditions em que dois requests concorrentes tentam
+   * rotacionar o mesmo token (o segundo delete falharia com P2025).
+   */
+  rotate(
+    oldToken: string,
+    newToken: string,
+    userId: string,
+    expiresAt: Date,
+  ): Promise<RefreshToken>;
 }

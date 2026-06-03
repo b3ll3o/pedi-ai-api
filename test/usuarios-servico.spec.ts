@@ -35,6 +35,7 @@ describe('UsuariosUseCases', () => {
     mockRepository = {
       findById: jest.fn(),
       findByEmail: jest.fn(),
+      findByEmailIncludingDeleted: jest.fn(),
       findAll: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -62,7 +63,7 @@ describe('UsuariosUseCases', () => {
         senha: 'senha123',
       };
 
-      mockRepository.findByEmail.mockResolvedValue(null);
+      mockRepository.findByEmailIncludingDeleted.mockResolvedValue(null);
       mockRepository.create.mockResolvedValue({ ...mockUsuario, ...dto, senha: 'senha-hashed' });
 
       const resultado = await criarUseCase.execute(dto);
@@ -80,7 +81,7 @@ describe('UsuariosUseCases', () => {
         senha: 'senha123',
       };
 
-      mockRepository.findByEmail.mockResolvedValue(mockUsuario);
+      mockRepository.findByEmailIncludingDeleted.mockResolvedValue(mockUsuario);
 
       await expect(criarUseCase.execute(dto)).rejects.toThrow(ConflictException);
     });

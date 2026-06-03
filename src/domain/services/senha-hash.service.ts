@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12;
 
 export const ISENHA_HASH_SERVICE = 'ISENHA_HASH_SERVICE';
 

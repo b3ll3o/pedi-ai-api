@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsArray, ArrayNotEmpty, IsUUID } from 'class-validator';
 
 export class CriarPerfilDto {
   @IsNotEmpty()
@@ -21,6 +21,8 @@ export class AtualizarPerfilDto {
 }
 
 export class AssociarPermissoesDto {
-  @IsNotEmpty()
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('all', { each: true })
   permissoesIds: string[];
 }

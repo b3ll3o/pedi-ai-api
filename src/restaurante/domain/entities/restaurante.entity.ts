@@ -122,6 +122,18 @@ export class RestauranteEntity {
     return feMinutes > abMinutes;
   }
 
+  /**
+   * Compara dois horários HH:MM em minutos desde meia-noite.
+   * Exportado para reuso em use-cases que precisam validar pares atualizados.
+   */
+  static compararHorarios(a: string, b: string): number {
+    const toMinutes = (h: string) => {
+      const [hh, mm] = h.split(':').map(Number);
+      return hh * 60 + mm;
+    };
+    return toMinutes(a) - toMinutes(b);
+  }
+
   private formatCnpj(cnpj: string): string {
     return cnpj.replace(/[.\-/]/g, '');
   }

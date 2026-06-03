@@ -19,9 +19,16 @@ export class RefreshTokenRepositoryImpl implements IRefreshTokenRepository {
   }
 
   async findByToken(token: string): Promise<RefreshToken | null> {
+    // `select` explícito para nunca trazer `user.senha`: o caller (auth.service)
+    // só usa `userId`, mas include: { user: true } puxa o hash pra memória.
+    // Custo zero, defesa contra refactor futuro que esqueça do filter.
     const refreshToken = await this.prisma.refreshToken.findUnique({
       where: { token },
-      include: { user: true },
+      include: {
+        user: {
+          select: { id: true, perfilId: true, deletedAt: true },
+        },
+      },
     });
     return refreshToken as RefreshToken | null;
   }
@@ -36,5 +43,20 @@ export class RefreshTokenRepositoryImpl implements IRefreshTokenRepository {
     await this.prisma.refreshToken.delete({
       where: { token },
     });
+  }
+
+  async rotate(
+    oldToken: string,
+    newToken: string,
+    userId: string,
+    expiresAt: Date,
+  ): Promise<RefreshToken> {
+    return (await this.prisma.$transaction(async (tx) => {
+      // delete + create atômico: se a delete falhar, a create não acontece.
+      await tx.refreshToken.delete({ where: { token: oldToken } });
+      return tx.refreshToken.create({
+        data: { token: newToken, userId, expiresAt },
+      });
+    })) as RefreshToken;
   }
 }

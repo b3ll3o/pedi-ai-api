@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -26,6 +27,7 @@ import {
   AtualizarPerfilDto,
   AssociarPermissoesDto,
 } from '../../../application/perfis/dto/perfil.dto';
+import { parsePagination } from '../../../common/pagination';
 
 @UseGuards(JwtAuthGuard, RolesAuthGuard)
 @RolesDecorators(Roles.ADMIN)
@@ -47,8 +49,8 @@ export class PerfisController {
   }
 
   @Get()
-  async listarTodos() {
-    return this.listarPerfisUseCase.execute();
+  async listarTodos(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+    return this.listarPerfisUseCase.execute(parsePagination(page, pageSize));
   }
 
   @Get(':id')

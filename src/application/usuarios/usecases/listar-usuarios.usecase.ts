@@ -9,8 +9,8 @@ export class ListarUsuariosUseCase {
     @Inject(IUSUARIOS_REPOSITORY) private readonly usuariosRepository: IUsuariosRepository,
   ) {}
 
-  async execute() {
-    const usuarios = await this.usuariosRepository.findAll();
+  async execute(params?: { skip?: number; take?: number }) {
+    const usuarios = await this.usuariosRepository.findAll(params);
     return usuarios.map(({ senha: _senha, ...resultado }) => resultado);
   }
 }

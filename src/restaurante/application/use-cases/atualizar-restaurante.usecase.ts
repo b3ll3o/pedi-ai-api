@@ -1,8 +1,9 @@
-import { Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Inject, NotFoundException, ConflictException } from '@nestjs/common';
 import {
   IRestaurantesRepository,
   IRESTAURANTES_REPOSITORY,
 } from '../../domain/repositories/restaurantes-repository.interface';
+import { RestauranteEntity } from '../../domain/entities/restaurante.entity';
 import { AtualizarRestauranteDto, RestauranteResponseDto } from '../dto/restaurante.dto';
 
 export class AtualizarRestauranteUseCase {
@@ -16,11 +17,13 @@ export class AtualizarRestauranteUseCase {
       throw new NotFoundException('Restaurante não encontrado');
     }
 
-    // Validar horários se fornecidos
-    if (dto.horarioAbertura && dto.horarioFechamento) {
-      if (dto.horarioAbertura >= dto.horarioFechamento) {
-        throw new BadRequestException('Horário de abertura deve ser anterior ao fechamento');
-      }
+    // Merge com o estado atual: validar o PAR resultante após aplicar o patch,
+    // não só os campos enviados. Sem isso, um PATCH com apenas horarioAbertura
+    // pode produzir abertura > fechamento.
+    const horarioAbertura = dto.horarioAbertura ?? restaurante.horarioAbertura;
+    const horarioFechamento = dto.horarioFechamento ?? restaurante.horarioFechamento;
+    if (RestauranteEntity.compararHorarios(horarioAbertura, horarioFechamento) >= 0) {
+      throw new ConflictException('Horário de abertura deve ser anterior ao fechamento');
     }
 
     const updated = await this.repository.update(id, dto);

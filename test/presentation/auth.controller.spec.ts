@@ -74,12 +74,15 @@ describe('AuthController', () => {
   });
 
   describe('logout', () => {
-    it('should call authService.logout with userId', async () => {
+    it('should call authService.logout with userId and access token from Authorization header', async () => {
       const mockReq = {
         user: {
           userId: 'user-123',
           email: 'test@test.com',
           perfilId: 'perfil-1',
+        },
+        headers: {
+          authorization: 'Bearer access-token-abc',
         },
       } as any;
 
@@ -87,7 +90,25 @@ describe('AuthController', () => {
 
       const result = await controller.logout(mockReq);
 
-      expect(authService.logout).toHaveBeenCalledWith('user-123');
+      expect(authService.logout).toHaveBeenCalledWith('user-123', 'access-token-abc');
+      expect(result).toEqual({ message: 'Logout realizado com sucesso' });
+    });
+
+    it('should call authService.logout with userId and undefined token when no Authorization header', async () => {
+      const mockReq = {
+        user: {
+          userId: 'user-123',
+          email: 'test@test.com',
+          perfilId: 'perfil-1',
+        },
+        headers: {},
+      } as any;
+
+      mockAuthService.logout.mockResolvedValue(undefined);
+
+      const result = await controller.logout(mockReq);
+
+      expect(authService.logout).toHaveBeenCalledWith('user-123', undefined);
       expect(result).toEqual({ message: 'Logout realizado com sucesso' });
     });
   });

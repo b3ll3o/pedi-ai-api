@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from '../../src/presentation/auth/auth.service';
 import { IUsuariosRepository } from '../../src/domain/interfaces/usuarios-repository.interface';
 import { IRefreshTokenRepository } from '../../src/domain/interfaces/refresh-token-repository.interface';
+import { IPerfisRepository } from '../../src/domain/interfaces/perfis-repository.interface';
 import { ISenhaHashService } from '../../src/domain/services/senha-hash.service';
 import { LoginDto } from '../../src/application/auth/dto/login.dto';
 import { RefreshTokenDto } from '../../src/application/auth/dto/refresh-token.dto';
@@ -23,6 +24,7 @@ describe('AuthService', () => {
   let authService: AuthService;
   let mockUsuariosRepository: jest.Mocked<IUsuariosRepository>;
   let mockRefreshTokenRepository: jest.Mocked<IRefreshTokenRepository>;
+  let mockPerfisRepository: jest.Mocked<IPerfisRepository>;
   let mockSenhaHashService: jest.Mocked<ISenhaHashService>;
   let mockJwtService: jest.Mocked<JwtService>;
 
@@ -30,6 +32,7 @@ describe('AuthService', () => {
     mockUsuariosRepository = {
       findById: jest.fn(),
       findByEmail: jest.fn(),
+      findByEmailIncludingDeleted: jest.fn(),
       findAll: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -41,6 +44,19 @@ describe('AuthService', () => {
       findByToken: jest.fn(),
       deleteByUserId: jest.fn(),
       deleteByToken: jest.fn(),
+      rotate: jest.fn(),
+    };
+
+    mockPerfisRepository = {
+      findById: jest.fn(),
+      findByNome: jest.fn(),
+      findAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      associarPermissoes: jest.fn(),
+      desassociarPermissao: jest.fn(),
+      findPermissoesByIds: jest.fn(),
     };
 
     mockSenhaHashService = {
@@ -59,7 +75,9 @@ describe('AuthService', () => {
     authService = new AuthService(
       mockUsuariosRepository,
       mockRefreshTokenRepository,
+      mockPerfisRepository,
       mockSenhaHashService,
+      { revoke: jest.fn(), isRevoked: jest.fn() } as any,
       mockJwtService,
     );
   });
@@ -108,6 +126,28 @@ describe('AuthService', () => {
 
       await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
+
+    it('deve incluir jti único em cada refresh token para evitar P2002 em logins rápidos', async () => {
+      mockUsuariosRepository.findByEmail.mockResolvedValue(mockUsuario);
+      mockSenhaHashService.compare.mockResolvedValue(true);
+      mockJwtService.signAsync
+        .mockResolvedValueOnce('access-token-1')
+        .mockResolvedValueOnce('refresh-token-1')
+        .mockResolvedValueOnce('access-token-2')
+        .mockResolvedValueOnce('refresh-token-2');
+      mockRefreshTokenRepository.create.mockResolvedValue({} as any);
+
+      await authService.login(loginDto);
+      await authService.login(loginDto);
+
+      const signAsyncCalls = mockJwtService.signAsync.mock.calls;
+      const refreshPayloads = [signAsyncCalls[1][0], signAsyncCalls[3][0]] as Array<
+        Record<string, unknown>
+      >;
+      expect(refreshPayloads[0]).toHaveProperty('jti');
+      expect(refreshPayloads[1]).toHaveProperty('jti');
+      expect(refreshPayloads[0].jti).not.toEqual(refreshPayloads[1].jti);
+    });
   });
 
   describe('refreshToken', () => {
@@ -115,7 +155,7 @@ describe('AuthService', () => {
       refreshToken: 'valid-refresh-token',
     };
 
-    it('deve retornar novo access token quando refresh token for válido', async () => {
+    it('deve rotacionar tokens (novo access + novo refresh) quando refresh token for válido', async () => {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -126,16 +166,24 @@ describe('AuthService', () => {
         expiresAt,
         createdAt: new Date(),
       } as any);
-      mockRefreshTokenRepository.deleteByToken.mockResolvedValue();
+      mockRefreshTokenRepository.rotate.mockResolvedValue({} as any);
       mockUsuariosRepository.findById.mockResolvedValue(mockUsuario);
-      mockJwtService.signAsync.mockResolvedValue('new-access-token');
+      // refresh é assinado antes de access em generateRefreshTokenTransactional
+      mockJwtService.signAsync
+        .mockResolvedValueOnce('new-refresh-token')
+        .mockResolvedValueOnce('new-access-token');
 
       const result = await authService.refreshToken(refreshTokenDto);
 
       expect(result).toHaveProperty('accessToken', 'new-access-token');
+      expect(result).toHaveProperty('refreshToken', 'new-refresh-token');
       expect(result).toHaveProperty('expiresIn', 900);
-      expect(mockRefreshTokenRepository.deleteByToken).toHaveBeenCalledWith(
+      expect(result).toHaveProperty('tokenType', 'Bearer');
+      expect(mockRefreshTokenRepository.rotate).toHaveBeenCalledWith(
         refreshTokenDto.refreshToken,
+        'new-refresh-token',
+        mockUsuario.id,
+        expect.any(Date),
       );
     });
 
@@ -192,6 +240,16 @@ describe('AuthService', () => {
       await authService.logout(mockUsuario.id);
 
       expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(mockUsuario.id);
+    });
+
+    it('deve revogar o access token se fornecido', async () => {
+      mockRefreshTokenRepository.deleteByUserId.mockResolvedValue();
+      const futureExp = Math.floor(Date.now() / 1000) + 900;
+      mockJwtService.decode.mockReturnValue({ exp: futureExp });
+
+      await authService.logout(mockUsuario.id, 'access-token-abc');
+
+      expect(mockJwtService.decode).toHaveBeenCalledWith('access-token-abc');
     });
   });
 

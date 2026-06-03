@@ -107,6 +107,9 @@ describe('PerfisRepositoryImpl', () => {
       expect(mockPrisma.perfil.findMany).toHaveBeenCalledWith({
         where: { deletedAt: null },
         include: { permissoes: true },
+        orderBy: { createdAt: 'desc' },
+        skip: undefined,
+        take: undefined,
       });
     });
 
@@ -145,7 +148,7 @@ describe('PerfisRepositoryImpl', () => {
 
       expect(resultado).toEqual(perfilAtualizado);
       expect(mockPrisma.perfil.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-perfil-test' },
+        where: { id: 'uuid-perfil-test', deletedAt: null },
         data: updateData,
         include: { permissoes: true },
       });
@@ -175,10 +178,10 @@ describe('PerfisRepositoryImpl', () => {
 
       expect(resultado).toEqual(perfilComPermissoes);
       expect(mockPrisma.perfil.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-perfil-test' },
+        where: { id: 'uuid-perfil-test', deletedAt: null },
         data: {
           permissoes: {
-            connect: permissoesIds.map((id) => ({ id })),
+            set: permissoesIds.map((id) => ({ id })),
           },
         },
         include: { permissoes: true },

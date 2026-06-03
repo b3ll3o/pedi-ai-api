@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -23,6 +24,7 @@ import {
   CriarPermissaoDto,
   AtualizarPermissaoDto,
 } from '../../../application/permissoes/dto/permissao.dto';
+import { parsePagination } from '../../../common/pagination';
 
 @UseGuards(JwtAuthGuard, RolesAuthGuard)
 @RolesDecorators(Roles.ADMIN)
@@ -42,8 +44,8 @@ export class PermissoesController {
   }
 
   @Get()
-  async listarTodos() {
-    return this.listarPermissoesUseCase.execute();
+  async listarTodos(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+    return this.listarPermissoesUseCase.execute(parsePagination(page, pageSize));
   }
 
   @Get(':id')

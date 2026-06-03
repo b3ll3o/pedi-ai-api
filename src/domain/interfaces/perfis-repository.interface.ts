@@ -6,7 +6,7 @@ export const IPERFIS_REPOSITORY = 'IPERFIS_REPOSITORY';
 export interface IPerfisRepository {
   findById(id: string): Promise<Perfil | null>;
   findByNome(nome: string): Promise<Perfil | null>;
-  findAll(): Promise<Perfil[]>;
+  findAll(params?: { skip?: number; take?: number }): Promise<Perfil[]>;
   create(data: CriarPerfilParams): Promise<Perfil>;
   update(id: string, data: AtualizarPerfilParams): Promise<Perfil>;
   softDelete(id: string): Promise<void>;

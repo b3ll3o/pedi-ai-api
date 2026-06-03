@@ -9,7 +9,7 @@ export class ListarPermissoesUseCase {
     @Inject(IPERMISSOES_REPOSITORY) private readonly permissoesRepository: IPermissoesRepository,
   ) {}
 
-  async execute() {
-    return this.permissoesRepository.findAll();
+  async execute(params?: { skip?: number; take?: number }) {
+    return this.permissoesRepository.findAll(params);
   }
 }

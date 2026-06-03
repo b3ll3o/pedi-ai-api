@@ -104,6 +104,9 @@ describe('PermissoesRepositoryImpl', () => {
       expect(mockPrisma.permissao.findMany).toHaveBeenCalledWith({
         where: { deletedAt: null },
         include: { perfis: true },
+        orderBy: { createdAt: 'desc' },
+        skip: undefined,
+        take: undefined,
       });
     });
 
@@ -143,7 +146,7 @@ describe('PermissoesRepositoryImpl', () => {
 
       expect(resultado).toEqual(permissaoAtualizada);
       expect(mockPrisma.permissao.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-permissao-test' },
+        where: { id: 'uuid-permissao-test', deletedAt: null },
         data: updateData,
         include: { perfis: true },
       });
