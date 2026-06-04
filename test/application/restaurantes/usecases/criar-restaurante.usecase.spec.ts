@@ -1,3 +1,5 @@
+import { ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { CriarRestauranteUseCase } from '../../../../src/restaurante/application/use-cases/criar-restaurante.usecase';
 import {
   IRestaurantesRepository,
@@ -85,5 +87,44 @@ describe('CriarRestauranteUseCase', () => {
     mockRepository.findByCnpj.mockRejectedValue(new Error('Erro no banco'));
 
     await expect(useCase.execute(validDto)).rejects.toThrow('Erro no banco');
+  });
+
+  it('deve converter Prisma P2002 em ConflictException quando CNPJ duplica no insert', async () => {
+    mockRepository.findByCnpj.mockResolvedValue(null);
+    const prismaError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+      code: 'P2002',
+      clientVersion: 'test',
+    });
+    mockRepository.create.mockRejectedValue(prismaError);
+
+    await expect(useCase.execute(validDto)).rejects.toThrow(ConflictException);
+    await expect(useCase.execute(validDto)).rejects.toThrow('CNPJ já cadastrado');
+  });
+
+  it('deve re-lançar outros erros do Prisma sem transformar', async () => {
+    mockRepository.findByCnpj.mockResolvedValue(null);
+    const prismaError = new Prisma.PrismaClientKnownRequestError('Other error', {
+      code: 'P2003',
+      clientVersion: 'test',
+    });
+    mockRepository.create.mockRejectedValue(prismaError);
+
+    await expect(useCase.execute(validDto)).rejects.toThrow(prismaError);
+  });
+
+  it('deve re-lançar erros genéricos do create sem transformar', async () => {
+    mockRepository.findByCnpj.mockResolvedValue(null);
+    const genericError = new Error('Database connection lost');
+    mockRepository.create.mockRejectedValue(genericError);
+
+    await expect(useCase.execute(validDto)).rejects.toThrow(genericError);
+  });
+
+  it('deve lançar BadRequest quando CNPJ é inválido (checksum)', async () => {
+    const dtoCnpjInvalido = { ...validDto, cnpj: '11.111.111/0001-11' };
+    mockRepository.findByCnpj.mockResolvedValue(null);
+
+    await expect(useCase.execute(dtoCnpjInvalido)).rejects.toThrow(/CNPJ/);
+    expect(mockRepository.create).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ const mockPrisma = {
     delete: jest.fn(),
     deleteMany: jest.fn(),
   },
+  $transaction: jest.fn(),
 };
 
 describe('RefreshTokenRepositoryImpl', () => {
@@ -97,6 +98,50 @@ describe('RefreshTokenRepositoryImpl', () => {
       expect(mockPrisma.refreshToken.delete).toHaveBeenCalledWith({
         where: { token: 'refresh-token-value' },
       });
+    });
+  });
+
+  describe('rotate', () => {
+    it('deve fazer delete + create dentro de uma transação atômica', async () => {
+      // Simula a transação: o callback recebe um `tx` com os mesmos métodos
+      // que o prisma real. Aqui só precisamos garantir que ambos foram chamados
+      // com os argumentos corretos.
+      const txMock = {
+        refreshToken: {
+          delete: jest.fn().mockResolvedValue(mockRefreshToken),
+          create: jest.fn().mockResolvedValue(mockRefreshToken),
+        },
+      };
+      mockPrisma.$transaction.mockImplementation(async (callback) => callback(txMock));
+
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const resultado = await repository.rotate(
+        'old-token',
+        'new-token',
+        'user-uuid-test',
+        expiresAt,
+      );
+
+      expect(txMock.refreshToken.delete).toHaveBeenCalledWith({ where: { token: 'old-token' } });
+      expect(txMock.refreshToken.create).toHaveBeenCalledWith({
+        data: { token: 'new-token', userId: 'user-uuid-test', expiresAt },
+      });
+      expect(resultado).toEqual(mockRefreshToken);
+    });
+
+    it('deve propagar erro do delete dentro da transação (atomicidade)', async () => {
+      const txMock = {
+        refreshToken: {
+          delete: jest.fn().mockRejectedValue(new Error('P2025: not found')),
+          create: jest.fn(),
+        },
+      };
+      mockPrisma.$transaction.mockImplementation(async (callback) => callback(txMock));
+
+      await expect(
+        repository.rotate('old-token', 'new-token', 'user-uuid', new Date()),
+      ).rejects.toThrow('P2025: not found');
+      expect(txMock.refreshToken.create).not.toHaveBeenCalled();
     });
   });
 });

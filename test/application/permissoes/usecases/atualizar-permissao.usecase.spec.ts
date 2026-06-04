@@ -42,7 +42,9 @@ describe('AtualizarPermissaoUseCase', () => {
       const result = await useCase.execute('permissao-123', { nome: 'Nome Atualizado' });
 
       expect(result.nome).toBe('Nome Atualizado');
-      expect(mockRepository.update).toHaveBeenCalledWith('permissao-123', { nome: 'Nome Atualizado' });
+      expect(mockRepository.update).toHaveBeenCalledWith('permissao-123', {
+        nome: 'Nome Atualizado',
+      });
     });
 
     it('deve atualizar chave da permissao com sucesso', async () => {
@@ -73,9 +75,9 @@ describe('AtualizarPermissaoUseCase', () => {
     it('deve lanhar NotFoundException quando permissao nao existe', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(useCase.execute('permissao-inexistente', { nome: 'Novo Nome' }))
-        .rejects
-        .toThrow(NotFoundException);
+      await expect(useCase.execute('permissao-inexistente', { nome: 'Novo Nome' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('deve lanhar ConflictException quando nome ja existe em outra permissao', async () => {
@@ -89,9 +91,9 @@ describe('AtualizarPermissaoUseCase', () => {
       mockRepository.findById.mockResolvedValue(permissaoExistente);
       mockRepository.findByNomeOrChave.mockResolvedValue(permissaoComNomeDuplicado);
 
-      await expect(useCase.execute('permissao-123', { nome: 'Nome Ja Utilizado' }))
-        .rejects
-        .toThrow(ConflictException);
+      await expect(useCase.execute('permissao-123', { nome: 'Nome Ja Utilizado' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('deve lanhar ConflictException quando chave ja existe em outra permissao', async () => {
@@ -105,9 +107,9 @@ describe('AtualizarPermissaoUseCase', () => {
       mockRepository.findById.mockResolvedValue(permissaoExistente);
       mockRepository.findByNomeOrChave.mockResolvedValue(permissaoComChaveDuplicada);
 
-      await expect(useCase.execute('permissao-123', { chave: 'chave:ja-existente' }))
-        .rejects
-        .toThrow(ConflictException);
+      await expect(
+        useCase.execute('permissao-123', { chave: 'chave:ja-existente' }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('deve permitir atualizacao quando findByNomeOrChave retorna si mesmo', async () => {

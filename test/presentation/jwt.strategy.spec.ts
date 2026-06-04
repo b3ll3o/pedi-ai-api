@@ -44,6 +44,16 @@ describe('JwtStrategy', () => {
     delete process.env.JWT_SECRET;
   });
 
+  describe('constructor', () => {
+    it('deve lançar erro se JWT_SECRET não está definido', () => {
+      delete process.env.JWT_SECRET;
+
+      expect(() => {
+        new JwtStrategy(mockAuthService as any, mockTokenBlacklist as any);
+      }).toThrow('JWT_SECRET environment variable is required');
+    });
+  });
+
   it('should be defined', () => {
     expect(strategy).toBeDefined();
   });
@@ -110,6 +120,42 @@ describe('JwtStrategy', () => {
       mockAuthService.validateUser.mockResolvedValue(null);
 
       await expect(strategy.validate(mockReq, payload)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('deve lançar UnauthorizedException quando token está revogado na blacklist', async () => {
+      const payload: JwtPayload = {
+        sub: 'user-123',
+        perfilId: 'perfil-1',
+        iat: Date.now(),
+        exp: Date.now() + 3600,
+      };
+      mockTokenBlacklist.isRevoked.mockReturnValue(true);
+
+      await expect(strategy.validate(mockReq, payload)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(mockReq, payload)).rejects.toThrow('Token revogado');
+      expect(mockAuthService.validateUser).not.toHaveBeenCalled();
+    });
+
+    it('deve funcionar sem header authorization (token undefined)', async () => {
+      const payload: JwtPayload = {
+        sub: 'user-123',
+        perfilId: null,
+        iat: Date.now(),
+        exp: Date.now() + 3600,
+      };
+      const reqSemHeader = { headers: {} } as any;
+      mockTokenBlacklist.isRevoked.mockReturnValue(false);
+      const mockUsuario = {
+        id: 'user-123',
+        nome: 'Test',
+        email: 't@t.com',
+        perfilId: null,
+      };
+      mockAuthService.validateUser.mockResolvedValue(mockUsuario as any);
+
+      const result = await strategy.validate(reqSemHeader, payload);
+
+      expect(result).toEqual({ userId: 'user-123', perfilId: null });
     });
   });
 });

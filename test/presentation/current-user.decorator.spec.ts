@@ -1,4 +1,5 @@
 import { ExecutionContext } from '@nestjs/common';
+import { currentUserFactory } from '../../src/presentation/auth/decorators/current-user.decorator';
 import { RequestWithUser } from '../../src/presentation/auth/interfaces/request-with-user.interface';
 
 describe('CurrentUserDecorator', () => {
@@ -12,15 +13,6 @@ describe('CurrentUserDecorator', () => {
     } as ExecutionContext;
   };
 
-  const currentUserLogic = (
-    data: keyof RequestWithUser['user'] | undefined,
-    ctx: ExecutionContext,
-  ) => {
-    const request = ctx.switchToHttp().getRequest<RequestWithUser>();
-    const user = request.user;
-    return data ? user[data] : user;
-  };
-
   describe('sem parametro (retorna usuario completo)', () => {
     it('deve retornar o usuario completo quando data é undefined', () => {
       const mockUser: RequestWithUser['user'] = {
@@ -30,12 +22,12 @@ describe('CurrentUserDecorator', () => {
       };
 
       const context = createMockContext(mockUser);
-      const result = currentUserLogic(undefined, context);
+      const result = currentUserFactory(undefined, context);
 
       expect(result).toEqual(mockUser);
     });
 
-    it('deve retornar o usuario completo quando data é undefined com todos os campos', () => {
+    it('deve retornar o usuario completo com todos os campos', () => {
       const mockUser: RequestWithUser['user'] = {
         userId: 'user-456',
         email: 'admin@test.com',
@@ -43,7 +35,7 @@ describe('CurrentUserDecorator', () => {
       };
 
       const context = createMockContext(mockUser);
-      const result = currentUserLogic(undefined, context);
+      const result = currentUserFactory(undefined, context);
 
       expect(result).toEqual(mockUser);
       expect((result as RequestWithUser['user']).userId).toBe('user-456');
@@ -60,7 +52,7 @@ describe('CurrentUserDecorator', () => {
       };
 
       const context = createMockContext(mockUser);
-      const result = currentUserLogic('userId', context);
+      const result = currentUserFactory('userId', context);
 
       expect(result).toBe('user-123');
     });
@@ -73,7 +65,7 @@ describe('CurrentUserDecorator', () => {
       };
 
       const context = createMockContext(mockUser);
-      const result = currentUserLogic('email', context);
+      const result = currentUserFactory('email', context);
 
       expect(result).toBe('test@example.com');
     });
@@ -86,7 +78,7 @@ describe('CurrentUserDecorator', () => {
       };
 
       const context = createMockContext(mockUser);
-      const result = currentUserLogic('perfilId', context);
+      const result = currentUserFactory('perfilId', context);
 
       expect(result).toBe('perfil-123');
     });
@@ -101,22 +93,9 @@ describe('CurrentUserDecorator', () => {
       };
 
       const context = createMockContext(mockUser);
-      const result = currentUserLogic('perfilId', context);
+      const result = currentUserFactory('perfilId', context);
 
       expect(result).toBeNull();
-    });
-
-    it('deve retornar undefined para campo inexistente no tipo', () => {
-      const mockUser: RequestWithUser['user'] = {
-        userId: 'user-123',
-        email: 'test@example.com',
-        perfilId: 'perfil-123',
-      };
-
-      const context = createMockContext(mockUser);
-      const result = (currentUserLogic as any)('nome', context);
-
-      expect(result).toBeUndefined();
     });
   });
 });

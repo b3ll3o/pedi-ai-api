@@ -172,6 +172,73 @@ describe('UsuariosUseCases', () => {
         NotFoundException,
       );
     });
+
+    it('deve lancar ConflictException quando o novo email ja esta em uso por outro usuario', async () => {
+      const dto: AtualizarUsuarioDto = { email: 'outro@exemplo.com' };
+      mockRepository.findById.mockResolvedValue(mockUsuario);
+      mockRepository.findByEmailIncludingDeleted.mockResolvedValue({
+        ...mockUsuario,
+        id: 'outro-uuid',
+        email: 'outro@exemplo.com',
+      });
+
+      await expect(atualizarUseCase.execute('uuid-test', dto)).rejects.toThrow(ConflictException);
+      await expect(atualizarUseCase.execute('uuid-test', dto)).rejects.toThrow(
+        'Email ja cadastrado',
+      );
+      expect(mockRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('deve normalizar o email (lowercase + trim) ao atualizar', async () => {
+      const dto: AtualizarUsuarioDto = { email: '  NOVO@EXEMPLO.com  ' };
+      mockRepository.findById.mockResolvedValue(mockUsuario);
+      mockRepository.findByEmailIncludingDeleted.mockResolvedValue(null);
+      mockRepository.update.mockResolvedValue({ ...mockUsuario, email: 'novo@exemplo.com' });
+
+      await atualizarUseCase.execute('uuid-test', dto);
+
+      expect(mockRepository.findByEmailIncludingDeleted).toHaveBeenCalledWith('novo@exemplo.com');
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        'uuid-test',
+        expect.objectContaining({ email: 'novo@exemplo.com' }),
+      );
+    });
+
+    it('deve pular checagem de colisao quando o email nao muda', async () => {
+      const dto: AtualizarUsuarioDto = { email: mockUsuario.email };
+      mockRepository.findById.mockResolvedValue(mockUsuario);
+      mockRepository.update.mockResolvedValue(mockUsuario);
+
+      await atualizarUseCase.execute('uuid-test', dto);
+
+      expect(mockRepository.findByEmailIncludingDeleted).not.toHaveBeenCalled();
+    });
+
+    it('deve propagar ConflictException quando Prisma retorna P2002 no update', async () => {
+      const dto: AtualizarUsuarioDto = { nome: 'Novo Nome' };
+      mockRepository.findById.mockResolvedValue(mockUsuario);
+      const { Prisma } = require('@prisma/client');
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      });
+      mockRepository.update.mockRejectedValue(prismaError);
+
+      await expect(atualizarUseCase.execute('uuid-test', dto)).rejects.toThrow(ConflictException);
+    });
+
+    it('deve propagar NotFoundException quando Prisma retorna P2025 no update', async () => {
+      const dto: AtualizarUsuarioDto = { nome: 'Novo Nome' };
+      mockRepository.findById.mockResolvedValue(mockUsuario);
+      const { Prisma } = require('@prisma/client');
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: 'test',
+      });
+      mockRepository.update.mockRejectedValue(prismaError);
+
+      await expect(atualizarUseCase.execute('uuid-test', dto)).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('DeletarUsuarioUseCase', () => {

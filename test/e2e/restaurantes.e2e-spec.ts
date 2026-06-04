@@ -201,9 +201,7 @@ describe('Restaurantes E2E', () => {
 
   describe('Acesso não autorizado', () => {
     it('deve retornar 401 para requisição sem token', async () => {
-      await request(app.getHttpServer())
-        .get('/restaurantes')
-        .expect(401);
+      await request(app.getHttpServer()).get('/restaurantes').expect(401);
     });
 
     it('deve retornar 401 para token invalido', async () => {

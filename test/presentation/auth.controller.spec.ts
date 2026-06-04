@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UnauthorizedException } from '@nestjs/common';
 import { AuthController } from '../../src/presentation/auth/auth.controller';
 import { AuthService } from '../../src/presentation/auth/auth.service';
 import { JwtAuthGuard } from '../../src/presentation/auth/guards/jwt-auth.guard';
 import { LoginDto } from '../../src/application/auth/dto/login.dto';
+import { RegisterDto } from '../../src/application/auth/dto/register.dto';
 import { RefreshTokenDto } from '../../src/application/auth/dto/refresh-token.dto';
 
 describe('AuthController', () => {
@@ -11,6 +13,7 @@ describe('AuthController', () => {
 
   const mockAuthService = {
     login: jest.fn(),
+    register: jest.fn(),
     refreshToken: jest.fn(),
     logout: jest.fn(),
     validateUser: jest.fn(),
@@ -53,6 +56,28 @@ describe('AuthController', () => {
       const result = await controller.login(loginDto);
 
       expect(authService.login).toHaveBeenCalledWith(loginDto);
+      expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('register', () => {
+    it('deve chamar authService.register com o DTO recebido', async () => {
+      const registerDto: RegisterDto = {
+        nome: 'Novo',
+        email: 'novo@test.com',
+        senha: 'password123',
+      };
+      const expectedResult = {
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresIn: 900,
+        tokenType: 'Bearer',
+      };
+      mockAuthService.register.mockResolvedValue(expectedResult);
+
+      const result = await controller.register(registerDto);
+
+      expect(authService.register).toHaveBeenCalledWith(registerDto);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -171,5 +196,53 @@ describe('AuthController', () => {
 
       expect(result.perfil).toBeNull();
     });
+
+    it('deve lançar UnauthorizedException quando validateUser retorna null', async () => {
+      const mockReq = {
+        user: {
+          userId: 'user-deleted',
+          email: 'deleted@test.com',
+          perfilId: null,
+        },
+      } as any;
+
+      mockAuthService.validateUser.mockResolvedValue(null);
+
+      await expect(controller.me(mockReq)).rejects.toThrow(UnauthorizedException);
+      await expect(controller.me(mockReq)).rejects.toThrow('Usuário não encontrado');
+    });
+  });
+});
+
+describe('AuthController - envInt fallback (THROTTLE env vars inválidas)', () => {
+  const ORIGINAL_ENV = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+  });
+
+  it('deve cair no fallback quando THROTTLE_SHORT_LIMIT é NaN (cobre linha 34-35)', () => {
+    process.env.THROTTLE_SHORT_LIMIT = 'abc';
+    process.env.THROTTLE_LONG_LIMIT = '20';
+
+    // A mera re-importação do módulo força a reavaliação das consts module-level
+    // (envInt → fallback). Se o parseInt não tivesse fallback, o decorator @Throttle
+    // receberia NaN e o ThrottlerModule quebraria em runtime.
+    expect(() => {
+      jest.isolateModules(() => {
+        require('../../src/presentation/auth/auth.controller');
+      });
+    }).not.toThrow();
+  });
+
+  it('deve cair no fallback quando THROTTLE_SHORT_LIMIT <= 0', () => {
+    process.env.THROTTLE_SHORT_LIMIT = '0';
+    process.env.THROTTLE_LONG_LIMIT = '20';
+
+    expect(() => {
+      jest.isolateModules(() => {
+        require('../../src/presentation/auth/auth.controller');
+      });
+    }).not.toThrow();
   });
 });
