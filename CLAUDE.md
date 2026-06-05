@@ -47,6 +47,19 @@ npm run lint:fix           # ESLint + auto-fix
 npm run format             # Prettier format
 ```
 
+**Setup dos testes E2E (primeira vez):**
+```bash
+# 1. Garantir que o Postgres está rodando e acessível
+# 2. Criar o banco `e2e_app` (uma vez):
+docker exec -it <postgres-container> psql -U postgres -c "CREATE DATABASE e2e_app;"
+# 3. Aplicar as migrations:
+DATABASE_URL="postgresql://postgres:postgres123@localhost:5432/e2e_app?schema=public" npx prisma migrate deploy
+# 4. Rodar os testes E2E:
+npm run test:e2e
+```
+
+> O `.env.e2e` já vem configurado com `THROTTLE_SHORT_LIMIT=1000000` e `THROTTLE_LONG_LIMIT=10000000` para evitar 429 em testes paralelos.
+
 **Prisma (após alterar `prisma/schema.prisma`):**
 ```bash
 npx prisma generate              # Regenera o Prisma Client
@@ -75,6 +88,8 @@ Env vars (ver `.env.example`):
 | `JWT_EXPIRES_IN` | não | TTL do access token (default `15m`) |
 | `JWT_REFRESH_EXPIRES_IN` | não | TTL do refresh token (default `7d`) |
 | `ALLOWED_ORIGINS` | **sim em prod** | CSV de origens CORS permitidas |
+| `THROTTLE_SHORT_LIMIT` | não | Limite do throttler na janela curta (60s). Default `5`. E2E usa `1000000` para evitar 429. |
+| `THROTTLE_LONG_LIMIT` | não | Limite do throttler na janela longa (1h). Default `30`. E2E usa `10000000`. |
 
 Arquivos de env no repo (cada um com propósito):
 - `.env` — dev local
