@@ -38,14 +38,14 @@ export class RestauranteEntity {
   constructor(props: RestauranteProps) {
     this.validateDomain(props);
 
-    this._id = props.id || '';
+    this._id = props.id ?? '';
     this._nome = props.nome;
     this._cnpj = this.formatCnpj(props.cnpj);
     this._email = props.email || null;
     this._telefone = props.telefone || null;
     this._endereco = props.endereco;
     this._cidade = props.cidade;
-    this._estado = props.estado.toUpperCase();
+    this._estado = (props.estado ?? '').toUpperCase();
     this._cep = props.cep;
     this._horarioAbertura = props.horarioAbertura;
     this._horarioFechamento = props.horarioFechamento;
@@ -61,7 +61,7 @@ export class RestauranteEntity {
       throw new Error('CNPJ inválido');
     }
 
-    if (props.estado && props.estado.length !== 2) {
+    if (!props.estado || props.estado.length !== 2) {
       throw new Error('Estado deve ter exatamente 2 caracteres');
     }
 

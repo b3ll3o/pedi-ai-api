@@ -176,6 +176,27 @@ describe('RestauranteEntity', () => {
 
       expect(() => new RestauranteEntity(data)).toThrow('Estado deve ter exatamente 2 caracteres');
     });
+
+    it('deve lançar erro quando estado é undefined', () => {
+      const data = {
+        nome: 'Restaurante Teste',
+        cnpj: '45.381.763/0001-68',
+        endereco: 'Rua teste, 123',
+        cidade: 'São Paulo',
+        // estado: undefined — antes passava silenciosamente (length !== 2 era
+        // curto-circuitado pelo truthy check) e quebrava o construtor
+        // com TypeError no `.toUpperCase()`.
+        cep: '01234-567',
+        horarioAbertura: '09:00',
+        horarioFechamento: '22:00',
+      };
+
+      // cast porque TS obriga o tipo — a entity tem que validar em runtime
+      // e não pode confiar no compilador.
+      expect(() => new RestauranteEntity(data as never)).toThrow(
+        'Estado deve ter exatamente 2 caracteres',
+      );
+    });
   });
 
   describe('validação de CEP', () => {
