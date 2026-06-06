@@ -4,6 +4,7 @@ import {
   IPERMISSOES_REPOSITORY,
 } from '../../../domain/interfaces/permissoes-repository.interface';
 import { CriarPermissaoParams } from '../../../domain/entities/permissao.entity';
+import { handlePrismaError } from '../../../common/prisma-errors';
 
 export class CriarPermissaoUseCase {
   constructor(
@@ -23,7 +24,12 @@ export class CriarPermissaoUseCase {
       throw new ConflictException('Chave de permissao ja cadastrada');
     }
 
-    const permissao = await this.permissoesRepository.create(data);
-    return permissao;
+    try {
+      return await this.permissoesRepository.create(data);
+    } catch (error) {
+      // P2002: race condition — duas inserções simultâneas com mesmo nome/chave
+      // passam o findByNomeOrChave e batem na unique constraint.
+      handlePrismaError(error, 'Nome ou chave de permissao ja cadastrada');
+    }
   }
 }

@@ -4,6 +4,7 @@ import {
   IPERFIS_REPOSITORY,
 } from '../../../domain/interfaces/perfis-repository.interface';
 import { AtualizarPerfilParams } from '../../../domain/entities/perfil.entity';
+import { handlePrismaError } from '../../../common/prisma-errors';
 
 export class AtualizarPerfilUseCase {
   constructor(@Inject(IPERFIS_REPOSITORY) private readonly perfisRepository: IPerfisRepository) {}
@@ -22,7 +23,12 @@ export class AtualizarPerfilUseCase {
       }
     }
 
-    const atualizado = await this.perfisRepository.update(id, data);
-    return atualizado;
+    try {
+      return await this.perfisRepository.update(id, data);
+    } catch (error) {
+      // P2002: race em rename para nome já em uso.
+      // P2025: registro sumiu entre findById e update (delete concorrente).
+      handlePrismaError(error, 'Nome de perfil ja cadastrado', 'Perfil nao encontrado');
+    }
   }
 }

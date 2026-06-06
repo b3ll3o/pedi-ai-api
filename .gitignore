@@ -21,6 +21,9 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+# Ambientes por cenário (DATABASE_URL de produção/banco real) — NUNCA versionar
+.env.e2e
+.env.e2e-app
 # Backups locais de .env com credenciais (NUNCA versionar — contém segredos)
 .env.backup
 .env.*.backup

@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "start:dev": "ts-node src/main.ts",
-    "start:e2e-app": "DATABASE_URL=\"postgresql://admin:admin@187.77.204.108:5432/e2e_app\" npx ts-node src/main.ts",
+    "start:e2e-app": "ts-node --env-file=.env.e2e-app src/main.ts",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "test:cov": "jest --coverage",

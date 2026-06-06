@@ -10,9 +10,14 @@ until nc -z postgres 5432 2>/dev/null; do
 done
 
 echo "Banco de dados pronto."
-echo "DATABASE_URL: $DATABASE_URL"
+# IMPORTANTE: nunca logar DATABASE_URL inteiro em prod — vaza credenciais nos
+# logs. Mostra apenas o host para diagnóstico.
+echo "DATABASE_URL host: $(echo "$DATABASE_URL" | sed -E 's#.*@([^/]+).*#\1#')"
 
 echo "Aplicando schema..."
+# ATENÇÃO: --force-reset APAGA TODOS OS DADOS do banco. Este entrypoint
+# foi feito para o container de E2E onde o banco é descartável. Em
+# produção real, use `prisma migrate deploy` (gerenciado por migrations).
 npx prisma db push --force-reset --url "$DATABASE_URL"
 
 echo "Executando seed..."

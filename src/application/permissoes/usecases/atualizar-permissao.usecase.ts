@@ -4,6 +4,7 @@ import {
   IPERMISSOES_REPOSITORY,
 } from '../../../domain/interfaces/permissoes-repository.interface';
 import { AtualizarPermissaoParams } from '../../../domain/entities/permissao.entity';
+import { handlePrismaError } from '../../../common/prisma-errors';
 
 export class AtualizarPermissaoUseCase {
   constructor(
@@ -33,7 +34,15 @@ export class AtualizarPermissaoUseCase {
       }
     }
 
-    const atualizado = await this.permissoesRepository.update(id, data);
-    return atualizado;
+    try {
+      return await this.permissoesRepository.update(id, data);
+    } catch (error) {
+      // P2002: race em rename; P2025: delete concorrente.
+      handlePrismaError(
+        error,
+        'Nome ou chave de permissao ja cadastrada',
+        'Permissao nao encontrada',
+      );
+    }
   }
 }
