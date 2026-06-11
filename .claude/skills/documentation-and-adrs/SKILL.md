@@ -115,7 +115,6 @@ YYYY-MM-DD
 ### Onde Guardar
 
 - `docs/adr/0001-titulo-curto.md` (PediAI pode não ter; criar se for usar)
-- Ou `openspec/notes/adr/` (legado — migrar)
 - Ou `.claude/notes/adr/` (futuro)
 
 **PediAI atual:** não tem pasta formal. Comece criando `docs/adr/` ao primeiro ADR.

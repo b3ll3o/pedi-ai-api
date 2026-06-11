@@ -47,7 +47,7 @@ PediAI usa **Conventional Commits** simplificado:
 
 **Rodapé:**
 - `BREAKING CHANGE: <descrição>` quando aplicável
-- `Ref: openspec/legacy/specs/<domin>/spec.md` se referenciar OpenSpec antigo (até migração completa)
+- `Ref: .claude/skills/<dominio>/SKILL.md` quando a mudança referenciar uma skill de domínio (recomendado)
 
 ## Versionamento Semântico (SemVer)
 
