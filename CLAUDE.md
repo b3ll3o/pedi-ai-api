@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Simplicidade máxima** — preferir a solução mais simples que resolva. Adiar complexidade (agregados, domain services, events, design patterns elaborados) até que o problema concreto a exija.
 - **Commits diretos na `main`** — sem PRs, sem feature branches, sem code review obrigatório. O time é pequeno e o objetivo é velocidade.
-- **Spec-first ainda vale** — escrever/atualizar a spec antes de implementar, mas o ciclo é leve.
+- **Skill-first ainda vale** — escrever/atualizar a SKILL.md do domínio antes de implementar, mas o ciclo é leve.
 
 Essas regras vêm de decisão explícita do projeto (MVP). Sobrescrevem partes do workflow OpenSpec "puro" descrito abaixo quando houver conflito (ex: arquivamento pode ser postergado, formal review pode ser pulada).
 
@@ -168,110 +168,101 @@ src/
 
 ---
 
-## OpenSpec-SDD Workflow
+## Agent-Skills + DDD Workflow
 
-### Classificação por Impacto
+Este projeto usa o modelo de **agent-skills** (baseado em [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)) para workflows opinativos. Especificações de domínio vivem em `SKILL.md` por bounded context.
 
-| Tipo       | Escopo                                | Artefatos necessários                                |
-|------------|---------------------------------------|------------------------------------------------------|
-| `minor`    | Bug fix, refactor interno             | spec.md atualizada                                   |
-| `standard` | Nova feature, mudança moderada        | proposal + spec + tasks                              |
-| `major`    | Mudança arquitetural, multi-domínio   | proposal + design + tasks + review formal            |
+### Domínios (SKILL.md)
 
-### Estados de Spec
+| Domínio | SKILL.md | Status |
+|---------|----------|--------|
+| `autenticacao` | `.claude/skills/auth/SKILL.md` | implemented |
+| `restaurante` | `.claude/skills/restaurante/SKILL.md` | implemented |
+| `perfil` | `.claude/skills/perfis/SKILL.md` | implemented |
+| `permissao` | `.claude/skills/permissoes/SKILL.md` | implemented |
 
-| Estado     | Descrição                                                              |
-|------------|-----------------------------------------------------------------------|
-| `draft`    | Em elaboração                                                          |
-| `review`   | Em revisão (stakeholders, team)                                        |
-| `approved` | Aprovada, pronta para implementação                                     |
-| `implemented` | Código shipped e testado                                         |
-| `archived` | Movida para archive/ (não mais ativa)                                  |
+### Skills de Domínio (carregadas sob demanda)
 
-### Fluxo Completo
+Cada `SKILL.md` segue a estrutura:
 
-```
-1. Criar spec (draft) em openspec/specs/<dominio>/
-2. Classificar (minor/standard/major)
-3. Identificar domínio (bounded context)
-4. Revisar (review → approved)
-5. Implementar (DDD: entity, aggregate, service, repository)
-6. Validar (testes, coverage 80%+)
-7. Vincular (PR/commit → spec)
-8. Arquivar (move to archive/YYYY-MM/)
-```
+1. **Visão Geral** — o que o domínio resolve
+2. **Quando Usar** — triggers para ativar a skill
+3. **Modelo de Domínio** — entidades, agregados, VOs, repositórios
+4. **Requisitos Funcionais (RF)** e **Não-Funcionais (RNF)**
+5. **Endpoints REST** (quando aplicável)
+6. **Critérios de Aceitação** — mensuráveis e testáveis
+7. **Racionalizações Comuns** — tabela anti-racionalização
+8. **Red Flags** — sinais de que algo está errado
+9. **Verificação** — checklist pré-merge
+
+### Skills Base (workflows genéricos)
+
+`.claude/skills/<skill>/SKILL.md` — disponíveis em todos os subprojetos:
+
+- **Meta**: `using-agent-skills`
+- **Define**: `spec-driven-development`, `idea-refine`, `interview-me`
+- **Plan**: `planning-and-task-breakdown`
+- **Build**: `incremental-implementation`, `test-driven-development`, `context-engineering`, `source-driven-development`, `doubt-driven-development`, `api-and-interface-design`
+- **Verify**: `debugging-and-error-recovery`, `browser-testing-with-devtools`
+- **Review**: `code-review-and-quality`, `code-simplification`, `security-and-hardening`, `performance-optimization`
+- **Ship**: `git-workflow-and-versioning`, `ci-cd-and-automation`, `deprecation-and-migration`, `documentation-and-adrs`, `observability-and-instrumentation`, `shipping-and-launch`
+
+### Personas (`.claude/agents/`)
+
+- `code-reviewer.md` — revisão multi-eixo
+- `test-engineer.md` — estratégia de testes + cobertura
+- `security-auditor.md` — OWASP + PediAI
+- `web-performance-auditor.md` — Core Web Vitals
+
+### Slash Commands (`.claude/commands/`)
+
+| Comando | Ativa |
+|---------|-------|
+| `/spec` | `spec-driven-development`, `idea-refine` |
+| `/plan` | `planning-and-task-breakdown` |
+| `/build` | `incremental-implementation`, `test-driven-development` |
+| `/test` | `test-driven-development`, `browser-testing-with-devtools` |
+| `/review` | persona `code-reviewer` + `code-review-and-quality` |
+| `/code-simplify` | `code-simplification` |
+| `/ship` | personas `code-reviewer` + `security-auditor` + `test-engineer` em paralelo |
+
+### References (`.claude/references/`)
+
+- `testing-patterns.md` — pirâmide de testes, TDD, anti-patterns
+- `security-checklist.md` — OWASP, RBAC, secrets
+- `performance-checklist.md` — Core Web Vitals, N+1, paginação
+- `accessibility-checklist.md` — WCAG 2.1 AA (carrega em app; também em api para respostas JSON acessíveis)
 
 ### Regras Obrigatórias
 
-1. **Spec first** — ANTES de escrever código, a especificação DEVE existir em `openspec/specs/`
+1. **Skill first** — ANTES de escrever código, a SKILL.md do domínio DEVE existir em `.claude/skills/<dominio>/SKILL.md`
 2. **DDD** — TODO código DEVE seguir Domain-Driven Design (entities, aggregates, services, repositories)
-3. **Classificação** — Toda spec DEVE ter tipo (minor/standard/major) e estado definido
-4. **Proposta** — Mudanças `standard` e `major` DEVEM ter proposta em `openspec/changes/<feature>/proposal.md`
-5. **Design** — Mudanças `major` DEVEM ter design documentado em `openspec/changes/<feature>/design.md`
-6. **Tasks** — Implementação QUEBRADA em tarefas em `openspec/changes/<feature>/tasks.md`
-7. **Idioma** — TODO código e documentação em **Português Brasileiro (pt-BR)**
-8. **Testes** — Cobertura mínima 80%
-9. **Aceitação** — Implementação SÓ pode começar APÓS spec ter estado `approved`
-10. **Arquivamento** — Changes concluídas DEVEM ser movidas para `openspec/archive/<YYYY-MM>/` com `_summary.md`
+3. **Idioma** — TODO código e documentação em **Português Brasileiro (pt-BR)**
+4. **Testes** — Cobertura mínima 80%
+5. **Quality Gate** — SKILL.md DEVE conter Visão Geral, Quando Usar, RF/RNF, Critérios de Aceitação, Racionalizações, Red Flags, Verificação
 
-### Checklist de Quality Gate
-
-Para uma spec ser considerada válida (estado `approved`), DEVE conter:
-
-- [ ] **Objetivo**: O que resolve, para quem
-- [ ] **Domínio**: Bounded context identificado
-- [ ] **Contexto**: Situação atual, problema
-- [ ] **Modelo de Domínio**: Entidades, agregados, value objects, serviços definidos
-- [ ] **Requisitos**: RF e RNF numerados (RF-01, RF-02...)
-- [ ] **Critérios de aceitação**: Mensuráveis e testáveis
-- [ ] **Decisões de design**: Links para design.md se aplicável
-- [ ] **Estratégia de testes**: Como validar que está pronto
-- [ ] **Tasks vinculadas**: tasks.md criada e linkada
-- [ ] **Revisão aprovada**: Pelo menos 1 reviewer sign-off
-
-### Template de Spec
+### Template de SKILL.md de Domínio
 
 ```markdown
 ---
-status: draft|review|approved|implemented|archived
-type: minor|standard|major
+name: <dominio-kebab-case>
+description: <PT-BR — descreve o domínio e quando ativar a skill>
+type: domain
+status: draft|implemented
 domain: <bounded-context>
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
-linked_prs: [PR #...]
 ---
 
-# <Nome da Spec>
+# <Nome do Domínio>
 
-## Domínio
-<Bounded Context>
-
-## Objetivo
+## Visão Geral
 O que resolve, para quem.
 
-## Contexto
-Situação atual, problema.
+## Quando Usar
+- Trigger 1
+- Trigger 2
 
 ## Modelo de Domínio
-
-### Entidades
-- **Entidade1**: descrição, atributos principais
-- **Entidade2**: descrição, atributos principais
-
-### Agregados
-- **Agregado1**: raiz, entidades pertencentes, invariantes
-
-### Value Objects
-- **ValueObject1**: descrição, atributos
-
-### Serviços de Domínio
-- **Servico1**: responsabilidade, regras
-
-### Eventos de Domínio
-- **Evento1**: quando ocorre, dados carregados
-
-### Repositórios (Ports)
-- **IRepositorio**: interface para persistência
+### Entidades / Agregados / Value Objects / Repositórios
 
 ## Requisitos Funcionais (RF)
 - RF-01: ...
@@ -281,84 +272,40 @@ Situação atual, problema.
 - RNF-01: ...
 
 ## Critérios de Aceitação
-- [ ] Critério 1
-- [ ] Critério 2
+- [ ] ...
 
-## Decisões de Design
-- [Design](design.md) - se aplicável
+## Racionalizações Comuns
+| Racionalização | Realidade |
+|---|---|
+| "..." | ... |
 
-## Estratégia de Testes
-- Unitários: ...
-- E2E: ...
+## Red Flags
+- ...
 
-## Tasks
-- [Tasks](tasks.md)
+## Verificação
+- [ ] `npm run lint` sem erros
+- [ ] `npm run test:cov` ≥ 80%
+- [ ] ...
 ```
 
 ### Traceability
 
-Commits e PRs DEVEM referenciar a spec que implementam:
+Commits DEVEM referenciar a skill de domínio:
 
 ```
 commit: <hash>
-spec: openspec/specs/<dominio>/spec.md
+skill: .claude/skills/<dominio>/SKILL.md
 domain: <bounded-context>
 ```
 
-No PR description:
+### Histórico OpenSpec (migrado)
+
+O workflow anterior (OpenSpec-SDD) está preservado na tag git `pre-agent-skills-migration`. 12 specs + 6 changes arquivadas ficam acessíveis via:
+
+```bash
+git checkout pre-agent-skills-migration -- openspec/  # restaura estrutura antiga
+git log --oneline -- openspec/                          # vê histórico de mudanças
 ```
-## Spec
-- Implementa: openspec/specs/<dominio>/spec.md
-- Domínio: <bounded-context>
-```
-
-### Automação CI
-
-```
-- PR não pode ser mergeado se código muda domínio X
-  sem que a spec correspondente tenha status "approved"
-- Commits DEVEM referenciar spec (commit msg ou PR description)
-- Coverage mínimo 80% enforced no CI
-- Validação de tipos DDD (agregados, entidades, value objects)
-```
-
-### Estrutura OpenSpec (real)
-
-```
-openspec/
-├── config.yaml          # Configuração do projeto + regras enforced
-├── specs/               # Especificações de domínio
-│   ├── auth/spec.md
-│   ├── restaurante/spec.md
-│   ├── perfis/          # ⚠️ pasta existe mas spec.md está VAZIA
-│   └── permissoes/      # ⚠️ pasta existe mas spec.md está VAZIA
-└── changes/             # Propostas ativas + arquivo
-    ├── <feature>/
-    │   ├── proposal.md
-    │   ├── design.md
-    │   ├── tasks.md
-    │   └── (spec.md, plan.md — opcionais)
-    └── archive/         # Changes já integradas
-└── archive/             # Resumo mensal de mudanças concluídas
-    └── <YYYY-MM>/
-        └── _summary.md
-```
-
-**Estado real das specs:**
-
-| Domínio | Spec | Status |
-|---------|------|--------|
-| `auth` | `openspec/specs/auth/spec.md` | ✓ existe |
-| `restaurante` | `openspec/specs/restaurante/spec.md` | ✓ existe |
-| `perfis` | pasta vazia | ⚠️ precisa ser escrita |
-| `permissoes` | pasta vazia | ⚠️ precisa ser escrita |
-| `usuario` | não existe | ⚠️ pasta nem criada |
-
-**Changes ativas** (em `openspec/changes/`):
-- `corrigir-problemas-seguranca-e-testes/` (plan, proposal, tasks)
-- `rbac-admin-access/` (design, proposal, spec, tasks)
-
-**Changes arquivadas** (em `openspec/changes/archive/`): 6 entries de 2026-05 (`autenticacao-jwt`, `nestjs-user-crud-api`, `perfis-permissoes`, `restaurantes-crud`, `rbac-restaurantes-e2e`, `melhorias-best-practices`).
 
 ---
 
