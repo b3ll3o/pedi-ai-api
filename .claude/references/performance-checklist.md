@@ -9,8 +9,10 @@ description: Checklist de performance para backend e frontend. Carregue quando p
 
 ### Banco de Dados
 
-- [ ] Toda query com `take` (paginação) — sem `findMany` sem limite
-- [ ] Índices em colunas filtradas (`@@index` no schema)
+- [ ] Toda query com `take` (paginação) — sem `findMany` sem limite. **Default `take: 50`** nas listagens (perfis, permissoes, usuarios, restaurantes) para manter payload enxuto
+- [ ] `select` em listagens para excluir campos sensíveis/volumosos (ex: `senha` em `User`)
+- [ ] Endpoints `GET /<recurso>/count` para dashboards (evita baixar lista inteira só para mostrar contador)
+- [ ] Índices em colunas filtradas (`@@index` no schema) — ver migration `20260614120000_add_perf_indexes` para o conjunto atual (`users.email/perfilId/deletedAt`, `perfis.nome/deletedAt`, `permissoes.nome/chave/deletedAt`, `restaurantes.deletedAt`, `refresh_tokens.token/expiresAt/userId`, `revoked_jtis.expiresAt`)
 - [ ] Sem N+1 queries (usar `include` ou batch)
 - [ ] Sem `prisma.$queryRaw` sem necessidade
 - [ ] Soft delete filtrado consistentemente (`where: { deletedAt: null }`)
@@ -26,7 +28,8 @@ description: Checklist de performance para backend e frontend. Carregue quando p
 
 ### Caching
 
-- [ ] Cache em memória para dados estáticos (ex: lista de roles)
+- [ ] Cache em memória para dados estáticos (ex: `validationCache` no `JwtStrategy` — TTL 5s, cap 256 entradas, evita N round-trips ao DB em rajadas de requests autenticados)
+- [ ] Cleanup periódico de tabelas com TTL (ex: `revoked_jtis` — `purgeExpired()` a cada 5min; suportado por índice em `expiresAt`)
 - [ ] Headers `Cache-Control` em responses cacheáveis
 - [ ] ETag para conteúdo que muda devagar
 - [ ] Invalidação de cache explícita (não "esquecer")
@@ -48,7 +51,7 @@ description: Checklist de performance para backend e frontend. Carregue quando p
 ### Core Web Vitals (Mobile, 4G)
 
 | Métrica | Bom | Onde Medir |
-|---------|-----|------------|
+| --- | --- | --- |
 | **LCP** (Largest Contentful Paint) | < 2.5s | Lighthouse, Web Vitals |
 | **INP** (Interaction to Next Paint) | < 200ms | Web Vitals |
 | **CLS** (Cumulative Layout Shift) | < 0.1 | Web Vitals |
@@ -110,12 +113,14 @@ description: Checklist de performance para backend e frontend. Carregue quando p
 ## Anti-Patterns
 
 | Anti-pattern | Impacto | Correção |
-|--------------|---------|----------|
+| --- | --- | --- |
 | Imagem sem `width`/`height` | CLS alto | Sempre dimensions explícitas |
-| Fetch em `useEffect` na raiz | TTFB + LCP alto | Server Component ou SWR/React Query |
+| Fetch em `useEffect` na raiz | TTFB + LCP alto | Server Component ou hook `useAsyncList` (com `AbortController`) |
 | `useState` para tudo | Re-renders | Context, Zustand, ou Server |
 | Loop com DB | N+1 queries | `where: { id: { in: ids } }` |
-| Sem paginação | Memória + latência | `take` + `skip` |
+| Sem paginação | Memória + latência | `take: 50` + `skip` |
+| Lista inteira para mostrar contador | Payload + parse | `GET /<recurso>/count` |
+| `<th>` sem `scope="col"` | A11y em tabelas | Sempre `scope="col"` |
 | Bundle único grande | TTI alto | Code split, dynamic import |
 | `<img>` em vez de `next/image` | LCP alto | `next/image` |
 | Fonte externa | FOUT | `next/font` self-hosted |

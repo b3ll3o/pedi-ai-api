@@ -426,17 +426,23 @@ export class UsuariosController {
 | Método | Endpoint | Role Requerido |
 |--------|----------|----------------|
 | GET/POST | /users | ADMIN |
+| GET | /users/count | ADMIN |
 | PATCH/DELETE | /users/:id | ADMIN |
 | GET/POST | /perfis | ADMIN |
+| GET | /perfis/count | ADMIN |
 | PATCH/DELETE | /perfis/:id | ADMIN |
 | POST | /perfis/:id/permissoes | ADMIN |
 | DELETE | /perfis/:id/permissoes/:permissaoId | ADMIN |
 | GET/POST | /permissoes | ADMIN |
+| GET | /permissoes/count | ADMIN |
 | PATCH/DELETE | /permissoes/:id | ADMIN |
 | GET/POST | /restaurants | ADMIN |
+| GET | /restaurants/count | ADMIN |
 | PATCH/DELETE | /restaurants/:id | ADMIN |
 
 > Nota: rotas de usuário estão expostas em inglês (`/users`), enquanto perfis e permissões ficaram em português (`/perfis`, `/permissoes`). É assim no código, não mexer sem combinar.
+>
+> Os endpoints `*/count` retornam `{ total: number }` (sem wrapper `{ data }`) e existem para o dashboard — evitam baixar a lista inteira só para mostrar a contagem no card de estatísticas.
 
 **Endpoints públicos (sem proteção):**
 
@@ -447,7 +453,7 @@ export class UsuariosController {
 
 **Endpoints autenticados (JWT obrigatório, sem role):**
 
-- `POST /auth/logout` - Invalida refresh token no banco
+- `POST /auth/logout` - Invalida refresh token no banco **e persiste o `jti` do access token em `revoked_jtis`**
 - `GET /auth/me` - Dados do usuário logado (inclui perfil.nome)
 
 ### Respostas de Erro
@@ -473,11 +479,24 @@ Entidades atuais:
 
 | Model | Tabela | Notas |
 |-------|--------|-------|
-| `User` | `users` | FK opcional `perfilId` → `perfis.id`; tem `refreshTokens` |
-| `Perfil` | `perfis` | N:N com `Permissao` via tabela implícita |
-| `Permissao` | `permissoes` | Unique em `nome` e `chave` |
-| `RefreshToken` | (ver schema) | Tokens persistidos para revogação no logout |
-| `Restaurante` | (ver schema) | CRUD + soft delete |
+| `User` | `users` | FK opcional `perfilId` → `perfis.id`; tem `refreshTokens`. Índice em `email`, `perfilId`, `deletedAt` |
+| `Perfil` | `perfis` | N:N com `Permissao` via tabela implícita. Índice em `nome`, `deletedAt` |
+| `Permissao` | `permissoes` | Unique em `nome` e `chave`. Índices em `nome`, `chave`, `deletedAt` |
+| `RefreshToken` | (ver schema) | Tokens persistidos para revogação no logout. Índice em `token`, `expiresAt`, `userId` |
+| `Restaurante` | (ver schema) | CRUD + soft delete. Índice em `deletedAt` |
+| `RevokedJti` | `revoked_jtis` | **Blacklist persistente de jti revogados** (substituiu Map em memória). PK = `jti`; índice em `expiresAt` (suporta o cleanup periódico). Ver `src/infrastructure/auth/token-blacklist.service.ts` |
+
+### Índices de performance
+
+Migration `20260614120000_add_perf_indexes` adiciona os índices acima (e outros) em colunas filtradas em `findAll`/soft-delete/expiração. Sempre que adicionar um novo filtro (ex: `findByStatus`), criar índice na migration correspondente.
+
+### Blacklist de JWT (`revoked_jtis`)
+
+- Cada access/refresh token inclui um `jti` (JWT ID, RFC 7519 §4.1.7) gerado por `crypto.randomBytes(16).toString('hex')` no `AuthService`.
+- `POST /auth/logout` chama `tokenBlacklist.revoke(jti, exp, userId)` que faz `upsert` em `revoked_jtis`.
+- `JwtStrategy.validate()` chama `tokenBlacklist.isRevoked(jti)` antes de aceitar o token — 401 se revogado.
+- Cleanup automático: `OnModuleInit` agenda `setInterval(() => purgeExpired(), 5 * 60_000)`, removendo linhas com `expiresAt < now`. `unref()` permite que o processo termine sem esperar o timer.
+- **Fail-closed**: se o banco cair durante `revoke`, o erro é propagado (não aceitamos um logout que não foi persistido).
 
 **Prisma Client** é gerado em `node_modules/@prisma/client`. Repository implementations ficam em `src/infrastructure/database/prisma/repositories/`.
 

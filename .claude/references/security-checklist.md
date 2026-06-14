@@ -20,13 +20,15 @@ description: Checklist de segurança OWASP + PediAI. Carregue quando persona `se
 ### A02 — Cryptographic Failures
 
 - [ ] bcrypt com salt rounds ≥ 12
-- [ ] JWT com `algorithm` explícito (nunca `none`)
+- [ ] JWT com `algorithms: ['HS256']` explícito (nunca `none`; defesa contra algorithm confusion)
 - [ ] `JWT_SECRET` ≥ 256 bits, em env var (não no código)
+- [ ] `JWT_EXPIRES_IN` / `JWT_REFRESH_EXPIRES_IN` ≤ 90 dias (cap enforced em `parseExpiresInSeconds`)
 - [ ] HTTPS em produção
 - [ ] Senha nunca em log, response, ou URL
 - [ ] Senha nunca persistida em plain text
-- [ ] Refresh token armazenado hashed no banco
+- [ ] Refresh token armazenado em `refresh_tokens.token` (JWT em texto claro — trade-off documentado em `.claude/skills/auth/SKILL.md` RNF-04)
 - [ ] Senha em `.env.example` marcada como placeholder (não valor real)
+- [ ] Login usa timing-equalization via `DUMMY_BCRYPT_HASH` (sempre roda bcrypt, ~100ms, mesmo para email inexistente)
 
 ### A03 — Injection
 
@@ -66,19 +68,26 @@ description: Checklist de segurança OWASP + PediAI. Carregue quando persona `se
 ### A07 — Auth Failures
 
 - [ ] Rate limiting em `POST /auth/login` (5/60s default)
-- [ ] Refresh token rotation implementado
-- [ ] Logout invalida refresh token server-side
+- [ ] Refresh token rotation implementado (com `generateRefreshTokenTransactional` para evitar race)
+- [ ] Logout invalida refresh token **e** persiste o `jti` do access token em `revoked_jtis`
+- [ ] `jwtService.verify()` é chamado **antes** de `tokenBlacklist.revoke()` (DoS protection — sem isso, tokens garbage poluem a blacklist)
+- [ ] Blacklist persistente em Postgres (não em memória) — sobrevive a restart e é visível entre instâncias
+- [ ] Cleanup periódico de `revoked_jtis` (a cada 5min) remove entradas expiradas
+- [ ] Blacklist é fail-closed (erro de DB propaga, não silenciosamente aceita)
 - [ ] Access token TTL ≤ 15 min
 - [ ] Refresh token TTL ≤ 7 dias
 - [ ] Tentativas falhas de login logadas (sem expor senha)
 - [ ] Senha mínima de 8 caracteres
 - [ ] Política de complexidade ou HIBP check
+- [ ] Cada token inclui `jti` (necessário para revogação por logout)
 
 ### A08 — Software/Data Integrity
 
-- [ ] Validar `alg` do JWT (nunca `none`)
+- [ ] Validar `alg` do JWT (nunca `none`) — `algorithms: ['HS256']` no `passport-jwt`
 - [ ] Validar assinatura do JWT
 - [ ] Validar `iss`, `aud`, `exp` quando aplicável
+- [ ] `jti` presente no payload (necessário para blacklist)
+- [ ] `proxy.ts` (no app) faz validação estrutural inline antes do backend (formato + `exp`)
 - [ ] Sem deserialização de dados não-confiáveis
 - [ ] Migrations Prisma revisadas antes de aplicar em prod
 
@@ -108,11 +117,12 @@ Apenas 4 endpoints públicos (todos os outros exigem JWT):
 ## PediAI — Cookies (pedi-ai-app)
 
 | Cookie | httpOnly | secure | sameSite | Por quê |
-|--------|----------|--------|----------|---------|
-| `pedi_auth_access_token` (proxy) | **false** | true (prod) | Lax | Lido server-side pelo proxy |
-| localStorage tokens | - | - | - | Lido client-side pelo AuthProvider |
+| --- | --- | --- | --- | --- |
+| `pedi_auth_access_token` (proxy) | **true** | true (prod) | Lax | Lido server-side pelo proxy; cookie-only no client, defesa em profundidade |
+| `pedi_auth_refresh_token` (server route) | **true** | true (prod) | Strict | Nunca exposto ao client; refresh acontece via server route `/api/auth/refresh` |
+| localStorage `pedi_auth_access_token` | - | - | - | Mantido para uso client-side pelo AuthProvider (decisão consciente, documentada) |
 
-**Atenção:** `httpOnly: false` é **exceção documentada** por causa do proxy server-side. Em outros contextos, sempre `httpOnly: true`.
+**Atenção:** o `httpOnly: true` no cookie do access token é a configuração atual. O `proxy.ts` valida o JWT inline (formato + `exp`) antes de liberar render. Em outros contextos sem proxy, mantenha `httpOnly: true`.
 
 ## Checklist Pré-Deploy
 

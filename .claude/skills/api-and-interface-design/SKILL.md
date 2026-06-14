@@ -66,7 +66,7 @@ PediAI está em pré-1.0 e não versiona API no path. **Quando chegar a hora:**
 
 ## Estrutura de Response
 
-### Sucesso
+### Sucesso (objeto único)
 
 ```json
 {
@@ -92,6 +92,16 @@ PediAI está em pré-1.0 e não versiona API no path. **Quando chegar a hora:**
   }
 }
 ```
+
+### Endpoints de Contagem (`GET /<recurso>/count`)
+
+Retornam **diretamente** o objeto `{ total }` (sem wrapper `{ data }`) para ficar fácil de consumir no frontend sem desempacotar:
+
+```json
+{ "total": 42 }
+```
+
+Aplique a todos os domínios: `/users/count`, `/perfis/count`, `/permissoes/count`, `/restaurants/count`. Todos ADMIN.
 
 ### Erro
 
@@ -172,6 +182,21 @@ export class CreateRestauranteDto {
 - **Inconsistência histórica mantida** — não mexer sem combinar (ver `pedi-ai-api/CLAUDE.md`)
 - Novos recursos: decida idioma no `spec-driven-development` e mantenha
 
+## Validação de Params e Segurança
+
+- **Todos os params `:id` em controllers** devem usar `ParseUUIDPipe`:
+
+  ```typescript
+  @Get(':id')
+  async findOne(@Param('id', ParseUUIDPipe) id: string) { ... }
+  ```
+
+  Sem isso, UUIDs malformados (`/users/abc`) viram 500 em vez de 400 (Prisma lança erro de casting que o filtro global transforma em 500).
+
+- **Ordem das rotas no NestJS importa:** rotas estáticas (`/count`, `/me`) devem ser declaradas **antes** das dinâmicas (`:id`), senão o `:id` faz match com a string estática.
+
+- **JWT:** sempre explicitar `algorithms: ['HS256']` no `passport-jwt` para defesa contra `alg: none` e algorithm confusion. Incluir `jti` no payload (necessário para revogação por logout via `revoked_jtis`). Ver `.claude/skills/auth/SKILL.md`.
+
 ## Documentação
 
 Use OpenAPI/Swagger. NestJS tem `@nestjs/swagger` com decorators. PediAI deve ter:
@@ -205,6 +230,9 @@ Swagger gerado automaticamente disponível em `/api/docs` (configurar em `main.t
 - Endpoint sem `JwtAuthGuard` (exceto os 4 públicos documentados)
 - Falta de paginação em listagem
 - Sem soft delete (DELETE apaga de verdade)
+- `GET /recurso/count` ausente (dashboard vai buscar lista inteira só para contar)
+- `:id` sem `ParseUUIDPipe` (UUIDs malformados viram 500)
+- Rota estática (`/count`) declarada depois de `:id` no controller (vai dar 404 ou match errado)
 
 ## Verificação
 
@@ -219,3 +247,5 @@ Swagger gerado automaticamente disponível em `/api/docs` (configurar em `main.t
 - [ ] Soft delete em vez de hard delete
 - [ ] OpenAPI decorators (Swagger)
 - [ ] Teste E2E cobrindo caminho feliz + 1 erro
+- [ ] Params `:id` com `ParseUUIDPipe`
+- [ ] `GET /<recurso>/count` exposto (se o recurso é listado no dashboard)
