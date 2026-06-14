@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -22,6 +23,7 @@ import { AtualizarPerfilUseCase } from '../../../application/perfis/usecases/atu
 import { DeletarPerfilUseCase } from '../../../application/perfis/usecases/deletar-perfil.usecase';
 import { AssociarPermissoesPerfilUseCase } from '../../../application/perfis/usecases/associar-permissoes-perfil.usecase';
 import { DesassociarPermissaoPerfilUseCase } from '../../../application/perfis/usecases/desassociar-permissao-perfil.usecase';
+import { ContarPerfisUseCase } from '../../../application/perfis/usecases/contar-perfis.usecase';
 import {
   CriarPerfilDto,
   AtualizarPerfilDto,
@@ -41,6 +43,7 @@ export class PerfisController {
     private readonly deletarPerfilUseCase: DeletarPerfilUseCase,
     private readonly associarPermissoesPerfilUseCase: AssociarPermissoesPerfilUseCase,
     private readonly desassociarPermissaoPerfilUseCase: DesassociarPermissaoPerfilUseCase,
+    private readonly contarPerfisUseCase: ContarPerfisUseCase,
   ) {}
 
   @Post()
@@ -53,25 +56,34 @@ export class PerfisController {
     return this.listarPerfisUseCase.execute(parsePagination(page, pageSize));
   }
 
+  // Antes de `GET /:id` para não casar "count" como UUID (ParseUUIDPipe 400).
+  @Get('count')
+  async contar() {
+    return { total: await this.contarPerfisUseCase.execute() };
+  }
+
   @Get(':id')
-  async listarUm(@Param('id') id: string) {
+  async listarUm(@Param('id', ParseUUIDPipe) id: string) {
     return this.listarPerfilPorIdUseCase.execute(id);
   }
 
   @Patch(':id')
-  async atualizar(@Param('id') id: string, @Body() atualizarPerfilDto: AtualizarPerfilDto) {
+  async atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() atualizarPerfilDto: AtualizarPerfilDto,
+  ) {
     return this.atualizarPerfilUseCase.execute(id, atualizarPerfilDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletar(@Param('id') id: string) {
+  async deletar(@Param('id', ParseUUIDPipe) id: string) {
     return this.deletarPerfilUseCase.execute(id);
   }
 
   @Post(':id/permissoes')
   async associarPermissoes(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() associarPermissoesDto: AssociarPermissoesDto,
   ) {
     return this.associarPermissoesPerfilUseCase.execute(id, associarPermissoesDto.permissoesIds);
@@ -79,7 +91,10 @@ export class PerfisController {
 
   @Delete(':id/permissoes/:permissaoId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async desassociarPermissao(@Param('id') id: string, @Param('permissaoId') permissaoId: string) {
+  async desassociarPermissao(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('permissaoId', ParseUUIDPipe) permissaoId: string,
+  ) {
     return this.desassociarPermissaoPerfilUseCase.execute(id, permissaoId);
   }
 }

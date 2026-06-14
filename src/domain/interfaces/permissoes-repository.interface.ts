@@ -10,6 +10,7 @@ export interface IPermissoesRepository {
   findById(id: string): Promise<Permissao | null>;
   findByNomeOrChave(nome: string, chave: string): Promise<Permissao | null>;
   findAll(params?: { skip?: number; take?: number }): Promise<Permissao[]>;
+  count(): Promise<number>;
   create(data: CriarPermissaoParams): Promise<Permissao>;
   update(id: string, data: AtualizarPermissaoParams): Promise<Permissao>;
   softDelete(id: string): Promise<void>;

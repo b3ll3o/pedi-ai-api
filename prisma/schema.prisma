@@ -22,6 +22,14 @@ model User {
   perfil        Perfil?        @relation(fields: [perfilId], references: [id])
   refreshTokens RefreshToken[] @relation("UserRefreshTokens")
 
+  // Índices:
+  // - deletedAt: todo findBy/findAll filtra `deletedAt: null`. Sem índice,
+  //   Postgres faz seq scan. Em produção com 100k users isso vira o gargalo
+  //   dominante das requests autenticadas.
+  // - perfilId: FK sem índice faz o `include: { perfil }` virar nested-loop
+  //   seq scan em profiles quando o filtro de users não é seletivo.
+  @@index([deletedAt])
+  @@index([perfilId])
   @@map("users")
 }
 
@@ -61,6 +69,10 @@ model RefreshToken {
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
+  // expiresAt: cleanup job roda `deleteMany({ where: { expiresAt: { lt: now } } })`
+  // periodicamente (e em `validateRefreshToken` via path). Sem índice é seq scan
+  // em uma tabela que cresce indefinidamente até alguém podá-la.
+  @@index([expiresAt])
   @@map("refresh_tokens")
 }
 
@@ -82,5 +94,30 @@ model Restaurante {
   deletedAt        DateTime? @map("deleted_at")
   version          Int       @default(1)
 
+  // deletedAt: idem User — todas as listagens filtram soft-delete. cidade
+  // também é candidato futuro (queries "restaurantes em SP" são esperadas
+  // no app), mas ainda não há query concreta, então deixo só deletedAt.
+  @@index([deletedAt])
   @@map("restaurantes")
+}
+
+/// Tokens JWT (identificados pelo `jti`) revogados por logout. Ao validar
+/// um access token, o JwtAuthGuard consulta esta tabela: se o jti existir
+/// com `expiresAt > now`, o token é considerado inválido.
+///
+/// Substitui o antigo `TokenBlacklistService` em memória, que era por-instância
+/// e quebrava em deploy multi-instância (revogação em uma instância não era
+/// visível em outras). Persistir no Postgres garante consistência.
+///
+/// `expiresAt`: cleanup periódico remove linhas com `expiresAt < now` — sem
+/// índice a tabela cresce indefinidamente. O índice também é usado pelo
+/// `findFirst({ where: { jti, expiresAt: { gt: now } } })` no `isRevoked`.
+model RevokedJti {
+  jti       String   @id
+  userId    String?  @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  revokedAt DateTime @default(now()) @map("revoked_at")
+
+  @@index([expiresAt])
+  @@map("revoked_jtis")
 }

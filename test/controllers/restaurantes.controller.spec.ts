@@ -5,6 +5,7 @@ import { ListarRestaurantesUseCase } from '../../src/restaurante/application/use
 import { ListarRestaurantePorIdUseCase } from '../../src/restaurante/application/use-cases/listar-restaurante-por-id.usecase';
 import { AtualizarRestauranteUseCase } from '../../src/restaurante/application/use-cases/atualizar-restaurante.usecase';
 import { DeletarRestauranteUseCase } from '../../src/restaurante/application/use-cases/deletar-restaurante.usecase';
+import { ContarRestaurantesUseCase } from '../../src/restaurante/application/use-cases/contar-restaurantes.usecase';
 import { IRESTAURANTES_REPOSITORY } from '../../src/restaurante/domain/repositories/restaurantes-repository.interface';
 import { IPERFIS_REPOSITORY } from '../../src/domain/interfaces/perfis-repository.interface';
 
@@ -15,6 +16,7 @@ describe('RestaurantesController', () => {
   let mockListarPorIdUseCase: any;
   let mockAtualizarUseCase: any;
   let mockDeletarUseCase: any;
+  let mockContarUseCase: any;
 
   const mockRestauranteResponse = {
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -39,6 +41,7 @@ describe('RestaurantesController', () => {
     mockListarPorIdUseCase = { execute: jest.fn() };
     mockAtualizarUseCase = { execute: jest.fn() };
     mockDeletarUseCase = { execute: jest.fn() };
+    mockContarUseCase = { execute: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RestaurantesController],
@@ -48,12 +51,14 @@ describe('RestaurantesController', () => {
         { provide: ListarRestaurantePorIdUseCase, useValue: mockListarPorIdUseCase },
         { provide: AtualizarRestauranteUseCase, useValue: mockAtualizarUseCase },
         { provide: DeletarRestauranteUseCase, useValue: mockDeletarUseCase },
+        { provide: ContarRestaurantesUseCase, useValue: mockContarUseCase },
         {
           provide: IRESTAURANTES_REPOSITORY,
           useValue: {
             findByCnpj: jest.fn(),
             create: jest.fn(),
             findAll: jest.fn(),
+            count: jest.fn(),
             findById: jest.fn(),
             update: jest.fn(),
             softDelete: jest.fn(),

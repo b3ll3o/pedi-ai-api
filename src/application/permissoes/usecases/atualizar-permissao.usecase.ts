@@ -18,17 +18,23 @@ export class AtualizarPermissaoUseCase {
       throw new NotFoundException('Permissao nao encontrada');
     }
 
-    if (data.nome || data.chave) {
+    // `!== undefined` em vez de `||` permite explicitamente o caso `data.nome = ''`
+    // sem curto-circuitar e acabar caindo no `permissao.nome` antigo (que mascararia
+    // o conflito e gravaria string vazia no banco).
+    const nomeEfetivo = data.nome !== undefined ? data.nome : permissao.nome;
+    const chaveEfetiva = data.chave !== undefined ? data.chave : permissao.chave;
+
+    if (data.nome !== undefined || data.chave !== undefined) {
       const permissaoExistente = await this.permissoesRepository.findByNomeOrChave(
-        data.nome || permissao.nome,
-        data.chave || permissao.chave,
+        nomeEfetivo,
+        chaveEfetiva,
       );
 
       if (permissaoExistente && permissaoExistente.id !== id) {
-        if (data.nome && permissaoExistente.nome === data.nome) {
+        if (data.nome !== undefined && permissaoExistente.nome === data.nome) {
           throw new ConflictException('Nome de permissao ja cadastrado');
         }
-        if (data.chave && permissaoExistente.chave === data.chave) {
+        if (data.chave !== undefined && permissaoExistente.chave === data.chave) {
           throw new ConflictException('Chave de permissao ja cadastrada');
         }
       }

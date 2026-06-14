@@ -7,6 +7,7 @@ export interface IUsuariosRepository {
   findByEmail(email: string): Promise<Usuario | null>;
   findByEmailIncludingDeleted(email: string): Promise<Usuario | null>;
   findAll(params?: { skip?: number; take?: number }): Promise<Usuario[]>;
+  count(): Promise<number>;
   create(data: CriarUsuarioParams): Promise<Usuario>;
   update(id: string, data: AtualizarUsuarioParams): Promise<Usuario>;
   softDelete(id: string): Promise<void>;

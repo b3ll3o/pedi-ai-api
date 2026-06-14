@@ -1,10 +1,28 @@
 import { TokenBlacklistService } from '../../src/infrastructure/auth/token-blacklist.service';
+import { PrismaService } from '../../src/infrastructure/database/prisma/prisma.service';
 
 describe('TokenBlacklistService', () => {
+  // Mock mínimo do PrismaService — espelha apenas a interface que o service usa.
+  // O service chama `revokedJti.{upsert,findUnique,deleteMany}`, então o mock
+  // precisa desses 3 métodos. Cada teste configura o retorno conforme o caso.
+  let mockPrisma: jest.Mocked<Pick<PrismaService, 'revokedJti'>> & {
+    revokedJti: {
+      upsert: jest.Mock;
+      findUnique: jest.Mock;
+      deleteMany: jest.Mock;
+    };
+  };
   let service: TokenBlacklistService;
 
   beforeEach(() => {
-    service = new TokenBlacklistService();
+    mockPrisma = {
+      revokedJti: {
+        upsert: jest.fn(),
+        findUnique: jest.fn(),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+    } as any;
+    service = new TokenBlacklistService(mockPrisma as unknown as PrismaService);
     service.onModuleInit();
   });
 
@@ -13,44 +31,66 @@ describe('TokenBlacklistService', () => {
   });
 
   describe('revoke / isRevoked', () => {
-    it('deve retornar false para token que não foi revogado', () => {
-      expect(service.isRevoked('token-inexistente')).toBe(false);
+    it('deve retornar false para jti que não foi revogado', async () => {
+      mockPrisma.revokedJti.findUnique.mockResolvedValue(null);
+      await expect(service.isRevoked('jti-inexistente')).resolves.toBe(false);
     });
 
-    it('deve retornar true para token revogado com expiração futura', () => {
-      const futureExp = Date.now() + 60_000;
-      service.revoke('token-abc', futureExp);
+    it('deve retornar true para jti revogado com expiração futura', async () => {
+      const futureExp = new Date(Date.now() + 60_000);
+      mockPrisma.revokedJti.upsert.mockResolvedValue({} as any);
+      mockPrisma.revokedJti.findUnique.mockResolvedValue({ expiresAt: futureExp } as any);
 
-      expect(service.isRevoked('token-abc')).toBe(true);
+      await service.revoke('jti-abc', Math.floor(futureExp.getTime() / 1000));
+
+      await expect(service.isRevoked('jti-abc')).resolves.toBe(true);
     });
 
-    it('deve retornar false para token revogado cuja expiração já passou (lazy cleanup)', () => {
-      const pastExp = Date.now() - 60_000;
-      service.revoke('token-expirado', pastExp);
+    it('deve retornar false para jti revogado cuja expiração já passou (sem consultar DB novamente)', async () => {
+      const pastExp = new Date(Date.now() - 60_000);
+      mockPrisma.revokedJti.findUnique.mockResolvedValue({ expiresAt: pastExp } as any);
 
-      expect(service.isRevoked('token-expirado')).toBe(false);
-      // Lazy cleanup: a próxima consulta não precisa mais consultar a entrada.
-      expect(service.isRevoked('token-expirado')).toBe(false);
+      await expect(service.isRevoked('jti-expirado')).resolves.toBe(false);
     });
 
-    it('deve suportar múltiplos tokens revogados independentemente', () => {
-      const futureExp = Date.now() + 60_000;
-      service.revoke('token-a', futureExp);
-      service.revoke('token-b', futureExp);
+    it('deve usar upsert em revoke (idempotente)', async () => {
+      mockPrisma.revokedJti.upsert.mockResolvedValue({} as any);
+      const exp = Math.floor(Date.now() / 1000) + 60;
 
-      expect(service.isRevoked('token-a')).toBe(true);
-      expect(service.isRevoked('token-b')).toBe(true);
-      expect(service.isRevoked('token-c')).toBe(false);
+      await service.revoke('jti-x', exp, 'user-1');
+      await service.revoke('jti-x', exp, 'user-1');
+
+      expect(mockPrisma.revokedJti.upsert).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.revokedJti.upsert).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          where: { jti: 'jti-x' },
+          create: expect.objectContaining({ jti: 'jti-x', userId: 'user-1' }),
+        }),
+      );
+    });
+
+    it('deve suportar múltiplos jtis revogados independentemente', async () => {
+      const futureExp = new Date(Date.now() + 60_000);
+      mockPrisma.revokedJti.upsert.mockResolvedValue({} as any);
+      // jti-a e jti-b revogados; jti-c não
+      mockPrisma.revokedJti.findUnique.mockImplementation(async ({ where }) => {
+        if (where.jti === 'jti-a' || where.jti === 'jti-b') {
+          return { expiresAt: futureExp } as any;
+        }
+        return null;
+      });
+
+      await service.revoke('jti-a', Math.floor(futureExp.getTime() / 1000));
+      await service.revoke('jti-b', Math.floor(futureExp.getTime() / 1000));
+
+      await expect(service.isRevoked('jti-a')).resolves.toBe(true);
+      await expect(service.isRevoked('jti-b')).resolves.toBe(true);
+      await expect(service.isRevoked('jti-c')).resolves.toBe(false);
     });
   });
 
   describe('ciclo de vida do módulo', () => {
-    it('onModuleInit deve iniciar o timer de cleanup (unref para não bloquear shutdown)', () => {
-      // Já chamado no beforeEach. Verifica que isRevoked funciona após init.
-      service.revoke('token-after-init', Date.now() + 60_000);
-      expect(service.isRevoked('token-after-init')).toBe(true);
-    });
-
     it('onModuleDestroy deve limpar o timer sem erros', () => {
       expect(() => service.onModuleDestroy()).not.toThrow();
     });
@@ -61,7 +101,7 @@ describe('TokenBlacklistService', () => {
     });
 
     it('onModuleDestroy deve ser no-op se timer nunca foi iniciado', () => {
-      const fresh = new TokenBlacklistService();
+      const fresh = new TokenBlacklistService(mockPrisma as unknown as PrismaService);
       // Não chama onModuleInit — cleanupTimer é null
       expect(() => fresh.onModuleDestroy()).not.toThrow();
     });
@@ -69,15 +109,12 @@ describe('TokenBlacklistService', () => {
 
   describe('purgeExpired (timer de cleanup)', () => {
     let isolatedService: TokenBlacklistService;
-    // Ponto fixo no tempo: tudo que é "futuro" é > baseTime, tudo que é
-    // "passado" é < baseTime. Permite usar jest.useFakeTimers sem
-    // Date.now() começar em 0 e invalidar todas as referências relativas.
     const BASE_TIME = 1_700_000_000_000;
 
     beforeEach(() => {
       jest.useFakeTimers();
       jest.setSystemTime(BASE_TIME);
-      isolatedService = new TokenBlacklistService();
+      isolatedService = new TokenBlacklistService(mockPrisma as unknown as PrismaService);
     });
 
     afterEach(() => {
@@ -85,50 +122,45 @@ describe('TokenBlacklistService', () => {
       jest.useRealTimers();
     });
 
-    it('deve remover tokens expirados quando o timer dispara (cobre purgeExpired)', () => {
+    it('deve chamar deleteMany para remover expirados quando o timer dispara', async () => {
+      mockPrisma.revokedJti.deleteMany.mockResolvedValue({ count: 2 });
       isolatedService.onModuleInit();
-      // Adiciona tokens: dois expirados, dois válidos (longe no futuro)
-      isolatedService.revoke('expirado-1', BASE_TIME - 60_000);
-      isolatedService.revoke('expirado-2', BASE_TIME - 1_000);
-      isolatedService.revoke('valido-1', BASE_TIME + 3_600_000);
-      isolatedService.revoke('valido-2', BASE_TIME + 7_200_000);
 
       // Avança o tempo o suficiente para o interval disparar (5 min)
       jest.advanceTimersByTime(5 * 60 * 1000 + 1);
+      // Como deleteMany agora é async, o callback resolve no próximo microtask
+      await Promise.resolve();
 
-      // Expirados devem ter sido removidos
-      expect(isolatedService.isRevoked('expirado-1')).toBe(false);
-      expect(isolatedService.isRevoked('expirado-2')).toBe(false);
-      // Válidos continuam
-      expect(isolatedService.isRevoked('valido-1')).toBe(true);
-      expect(isolatedService.isRevoked('valido-2')).toBe(true);
+      expect(mockPrisma.revokedJti.deleteMany).toHaveBeenCalledWith({
+        where: { expiresAt: { lt: expect.any(Date) } },
+      });
     });
 
-    it('não deve chamar logger.debug se nada foi removido', () => {
+    it('deve logar debug quando remove entradas expiradas', async () => {
       const debugSpy = jest.spyOn((isolatedService as any).logger, 'debug');
+      mockPrisma.revokedJti.deleteMany.mockResolvedValue({ count: 2 });
       isolatedService.onModuleInit();
-      // Token ainda válido daqui 1h
-      isolatedService.revoke('valido', BASE_TIME + 3_600_000);
 
       jest.advanceTimersByTime(5 * 60 * 1000 + 1);
-
-      // Como nada foi removido, debug não deve ter sido chamado
-      expect(debugSpy).not.toHaveBeenCalled();
-      debugSpy.mockRestore();
-    });
-
-    it('deve chamar logger.debug quando remove entradas expiradas', () => {
-      const debugSpy = jest.spyOn((isolatedService as any).logger, 'debug');
-      isolatedService.onModuleInit();
-      isolatedService.revoke('expirado-a', BASE_TIME - 1_000);
-      isolatedService.revoke('expirado-b', BASE_TIME - 2_000);
-
-      jest.advanceTimersByTime(5 * 60 * 1000 + 1);
+      await Promise.resolve();
 
       expect(debugSpy).toHaveBeenCalledWith(
         expect.stringContaining('Blacklist cleanup: removed 2 expired entries'),
       );
       debugSpy.mockRestore();
+    });
+
+    it('deve logar error se cleanup falhar (mas não derrubar o serviço)', async () => {
+      const errorSpy = jest.spyOn((isolatedService as any).logger, 'error');
+      mockPrisma.revokedJti.deleteMany.mockRejectedValue(new Error('DB indisponível'));
+      isolatedService.onModuleInit();
+
+      jest.advanceTimersByTime(5 * 60 * 1000 + 1);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(errorSpy).toHaveBeenCalledWith('Cleanup failed', expect.any(Error));
+      errorSpy.mockRestore();
     });
   });
 });

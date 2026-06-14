@@ -7,6 +7,7 @@ import { ListarPermissoesUseCase } from '../../src/application/permissoes/usecas
 import { ListarPermissaoPorIdUseCase } from '../../src/application/permissoes/usecases/listar-permissao-por-id.usecase';
 import { AtualizarPermissaoUseCase } from '../../src/application/permissoes/usecases/atualizar-permissao.usecase';
 import { DeletarPermissaoUseCase } from '../../src/application/permissoes/usecases/deletar-permissao.usecase';
+import { ContarPermissoesUseCase } from '../../src/application/permissoes/usecases/contar-permissoes.usecase';
 import { CriarPermissaoDto } from '../../src/application/permissoes/dto/permissao.dto';
 
 describe('PermissoesController', () => {
@@ -29,6 +30,7 @@ describe('PermissoesController', () => {
   let mockListarPorIdUseCase: jest.Mocked<ListarPermissaoPorIdUseCase>;
   let mockAtualizarUseCase: jest.Mocked<AtualizarPermissaoUseCase>;
   let mockDeletarUseCase: jest.Mocked<DeletarPermissaoUseCase>;
+  let mockContarUseCase: jest.Mocked<ContarPermissoesUseCase>;
   let mockPerfisRepository: {
     findById: jest.Mock;
     findByNome: jest.Mock;
@@ -58,6 +60,7 @@ describe('PermissoesController', () => {
     mockListarPorIdUseCase = { execute: jest.fn() } as any;
     mockAtualizarUseCase = { execute: jest.fn() } as any;
     mockDeletarUseCase = { execute: jest.fn() } as any;
+    mockContarUseCase = { execute: jest.fn() } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PermissoesController],
@@ -68,6 +71,7 @@ describe('PermissoesController', () => {
         { provide: ListarPermissaoPorIdUseCase, useValue: mockListarPorIdUseCase },
         { provide: AtualizarPermissaoUseCase, useValue: mockAtualizarUseCase },
         { provide: DeletarPermissaoUseCase, useValue: mockDeletarUseCase },
+        { provide: ContarPermissoesUseCase, useValue: mockContarUseCase },
       ],
     }).compile();
 

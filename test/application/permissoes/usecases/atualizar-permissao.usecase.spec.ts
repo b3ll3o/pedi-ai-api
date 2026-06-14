@@ -22,6 +22,7 @@ describe('AtualizarPermissaoUseCase', () => {
       findAll: jest.fn(),
       findById: jest.fn(),
       findByNomeOrChave: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),

@@ -32,6 +32,7 @@ describe('PermissoesUseCases', () => {
       findById: jest.fn(),
       findByNomeOrChave: jest.fn(),
       findAll: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),

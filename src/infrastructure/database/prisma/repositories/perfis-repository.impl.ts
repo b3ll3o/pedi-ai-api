@@ -13,7 +13,7 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Perfil | null> {
-    const perfil = await this.prisma.perfil.findUnique({
+    const perfil = await this.prisma.perfil.findFirst({
       where: { id, deletedAt: null },
       include: { permissoes: true },
     });
@@ -21,7 +21,7 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
   }
 
   async findByNome(nome: string): Promise<Perfil | null> {
-    const perfil = await this.prisma.perfil.findUnique({
+    const perfil = await this.prisma.perfil.findFirst({
       where: { nome, deletedAt: null },
     });
     return perfil as Perfil | null;
@@ -38,6 +38,10 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
     return perfis as Perfil[];
   }
 
+  async count(): Promise<number> {
+    return this.prisma.perfil.count({ where: { deletedAt: null } });
+  }
+
   async create(data: CriarPerfilParams): Promise<Perfil> {
     const perfil = await this.prisma.perfil.create({
       data,
@@ -46,8 +50,11 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
   }
 
   async update(id: string, data: AtualizarPerfilParams): Promise<Perfil> {
+    // Single-query: o use-case já fez findById (com deletedAt: null) e
+    // lançou 404 se ausente. P2025 aqui = delete concorrente entre o
+    // findById e este update — vira 404 via handlePrismaError no caller.
     const perfil = await this.prisma.perfil.update({
-      where: { id, deletedAt: null },
+      where: { id },
       data,
       include: { permissoes: true },
     });
@@ -62,14 +69,10 @@ export class PerfisRepositoryImpl implements IPerfisRepository {
   }
 
   async associarPermissoes(id: string, permissoesIds: string[]): Promise<Perfil> {
-    // `set:` em vez de `connect:` para garantir idempotência em retries /
-    // re-chamadas. `connect` em Prisma é idempotente em versões recentes, mas
-    // `set` é a API documentada para "definir a lista exata" e elimina
-    // ambiguidade. `deletedAt: null` no where é salvaguarda: o use-case já
-    // valida com findById antes, mas sem o filtro o `set` executaria em
-    // registro soft-deletado. P2025 → NotFoundException via use-case.
+    // Mesma justificativa do update: use-case já fez findById, o handlePrismaError
+    // no caller traduz P2025 em 404 se houver delete concorrente.
     const perfil = await this.prisma.perfil.update({
-      where: { id, deletedAt: null },
+      where: { id },
       data: {
         permissoes: {
           set: permissoesIds.map((id) => ({ id })),

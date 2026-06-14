@@ -37,6 +37,7 @@ describe('UsuariosUseCases', () => {
       findByEmail: jest.fn(),
       findByEmailIncludingDeleted: jest.fn(),
       findAll: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),

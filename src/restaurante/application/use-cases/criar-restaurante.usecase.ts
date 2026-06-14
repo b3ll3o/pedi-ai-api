@@ -1,11 +1,11 @@
-import { Inject, ConflictException, BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Inject, BadRequestException } from '@nestjs/common';
 import {
   IRestaurantesRepository,
   IRESTAURANTES_REPOSITORY,
 } from '../../domain/repositories/restaurantes-repository.interface';
 import { RestauranteEntity } from '../../domain/entities/restaurante.entity';
 import { CriarRestauranteDto, RestauranteResponseDto } from '../dto/restaurante.dto';
+import { handlePrismaError } from '../../../common/prisma-errors';
 
 export class CriarRestauranteUseCase {
   constructor(
@@ -40,13 +40,11 @@ export class CriarRestauranteUseCase {
       throw new BadRequestException(err instanceof Error ? err.message : 'Dados inválidos');
     }
 
-    // Verificar se CNPJ já existe
-    const existingRestaurante = await this.repository.findByCnpj(entity.cnpj);
-    if (existingRestaurante) {
-      throw new ConflictException('CNPJ já cadastrado');
-    }
-
-    // Criar restaurante
+    // Sem pre-check CNPJ: o @unique do schema já é a fonte da verdade e o
+    // P2002 do handlePrismaError cobre tanto colisões serializadas quanto
+    // races (dois POSTs simultâneos com mesmo CNPJ). O pre-check anterior
+    // tinha dois custos: 1) round-trip extra no caminho feliz; 2) TOCTOU
+    // entre find e create — race podia vazar P2002 e cair no catch.
     try {
       const restaurante = await this.repository.create({
         nome: entity.nome,
@@ -63,10 +61,7 @@ export class CriarRestauranteUseCase {
 
       return RestauranteResponseDto.fromEntity(restaurante);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('CNPJ já cadastrado');
-      }
-      throw error;
+      handlePrismaError(error, 'CNPJ já cadastrado');
     }
   }
 }

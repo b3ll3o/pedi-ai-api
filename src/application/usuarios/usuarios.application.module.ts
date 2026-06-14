@@ -9,6 +9,7 @@ import { ListarUsuarioPorIdUseCase } from './usecases/listar-usuario-por-id.usec
 import { ListarUsuarioPorEmailUseCase } from './usecases/listar-usuario-por-email.usecase';
 import { AtualizarUsuarioUseCase } from './usecases/atualizar-usuario.usecase';
 import { DeletarUsuarioUseCase } from './usecases/deletar-usuario.usecase';
+import { ContarUsuariosUseCase } from './usecases/contar-usuarios.usecase';
 import { UsuariosController } from '../../presentation/usuarios/controllers/usuarios.controller';
 import { AuthModule } from '../../presentation/auth/auth.module';
 
@@ -23,6 +24,7 @@ import { AuthModule } from '../../presentation/auth/auth.module';
     ListarUsuarioPorEmailUseCase,
     AtualizarUsuarioUseCase,
     DeletarUsuarioUseCase,
+    ContarUsuariosUseCase,
     UsuariosController,
   ],
   controllers: [UsuariosController],
@@ -33,6 +35,7 @@ import { AuthModule } from '../../presentation/auth/auth.module';
     ListarUsuarioPorEmailUseCase,
     AtualizarUsuarioUseCase,
     DeletarUsuarioUseCase,
+    ContarUsuariosUseCase,
   ],
 })
 export class UsuariosModule {}

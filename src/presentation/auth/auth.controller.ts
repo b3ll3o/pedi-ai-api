@@ -10,6 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from '../../application/auth/dto/login.dto';
 import { RegisterDto } from '../../application/auth/dto/register.dto';
@@ -17,9 +18,13 @@ import { RefreshTokenDto } from '../../application/auth/dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 interface AuthenticatedRequest extends Request {
+  // O JwtStrategy preenche `user` a partir do payload do token, que contém
+  // { sub: userId, perfilId } — NÃO tem email. Manter `email` aqui era uma
+  // mentira de tipo: o controller compila mas `req.user.email` é `undefined`
+  // em runtime. Se precisar do email, resolver via `authService.validateUser`
+  // (igual o /me faz abaixo) em vez de confiar no payload.
   user: {
     userId: string;
-    email: string;
     perfilId: string | null;
   };
 }
@@ -76,11 +81,21 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: AuthenticatedRequest) {
-    const authHeader = (req.headers as unknown as Record<string, string | undefined>)[
-      'authorization'
-    ];
-    const accessToken =
-      typeof authHeader === 'string' ? authHeader.replace(/^Bearer\s+/i, '') : undefined;
+    // Node tipa IncomingHttpHeaders['authorization'] como string | string[] | undefined
+    // — proxies mal-comportados ou retries do cliente podem mandar múltiplos
+    // headers. Pegar o array inteiro e procurar o primeiro Bearer evita cair
+    // no typeof === 'string' que silenciosamente produziria undefined e
+    // deixaria o access token válido por mais 15min (logout parcial).
+    // Cast explícito: o tipo do express 5+ é `string | undefined` por padrão
+    // (o array só aparece em proxies mal-comportados).
+    const authHeader = req.headers['authorization'] as string | string[] | undefined;
+    let accessToken: string | undefined;
+    if (typeof authHeader === 'string') {
+      accessToken = authHeader.replace(/^Bearer\s+/i, '');
+    } else if (Array.isArray(authHeader)) {
+      const bearer = authHeader.find((h: string) => /^Bearer\s+/i.test(h));
+      accessToken = bearer ? bearer.replace(/^Bearer\s+/i, '') : undefined;
+    }
     await this.authService.logout(req.user.userId, accessToken);
     return { message: 'Logout realizado com sucesso' };
   }

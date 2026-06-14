@@ -1,28 +1,38 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { PrismaService } from '../database/prisma/prisma.service';
+
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 /**
- * Blacklist em memória para tokens JWT invalidados por logout.
+ * Blacklist de JWTs (jti) revogados por logout, persistida no Postgres.
  *
- * Limitação conhecida: é por-instância. Em deploy multi-instância, usar Redis
- * ou store compartilhado. Para o MVP (1 instância) é suficiente.
+ * Antes: blacklist em memória (Map) na `TokenBlacklistService`. Em deploy
+ * multi-instância, revogar em uma instância não era visível nas outras —
+ * o token permanecia válido até expirar.
  *
- * Cleanup: a cada `CLEANUP_INTERVAL_MS` varre o map e remove tokens cuja
- * `expiresAt` já passou. Sem isso, tokens revogados cuja `exp` já expirou
- * continuam ocupando memória se nunca forem checados de novo (cenário comum:
- * logout em um client, mas outros clients nunca usam esse token específico).
+ * Agora: cada revogação grava na tabela `revoked_jtis`. O `JwtAuthGuard`
+ * (e quem mais precisar) consulta `isRevoked(jti)` antes de aceitar o token.
+ * Persistir no Postgres garante consistência entre instâncias e
+ * sobrevive a restarts.
+ *
+ * Cleanup: a cada `CLEANUP_INTERVAL_MS`, varre `expiresAt < now` e remove
+ * as linhas. Sem isso a tabela cresce indefinidamente. O índice em
+ * `expiresAt` torna a varredura barata.
+ *
+ * Edge case: se o banco cair temporariamente, `revoke` propaga o erro
+ * (fail-closed — não aceitamos um logout que não foi persistido).
  */
 @Injectable()
 export class TokenBlacklistService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TokenBlacklistService.name);
-  private readonly blacklist = new Map<string, number>();
   private cleanupTimer: NodeJS.Timeout | null = null;
 
-  private static readonly CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+  constructor(private readonly prisma: PrismaService) {}
 
   onModuleInit(): void {
     this.cleanupTimer = setInterval(
-      () => this.purgeExpired(),
-      TokenBlacklistService.CLEANUP_INTERVAL_MS,
+      () => this.purgeExpired().catch((err) => this.logger.error('Cleanup failed', err)),
+      CLEANUP_INTERVAL_MS,
     );
     // `unref` permite que o processo termine mesmo com o timer ativo (importante
     // em testes onde o Jest mata o módulo abruptamente).
@@ -36,31 +46,45 @@ export class TokenBlacklistService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  revoke(token: string, expiresAt: number): void {
-    this.blacklist.set(token, expiresAt);
+  /**
+   * Revoga um token (identificado pelo `jti` do JWT) até sua expiração natural.
+   * Idempotente: chamar duas vezes com o mesmo jti é seguro (PK = jti).
+   */
+  async revoke(jti: string, expiresAt: number, userId?: string): Promise<void> {
+    await this.prisma.revokedJti.upsert({
+      where: { jti },
+      create: {
+        jti,
+        userId,
+        expiresAt: new Date(expiresAt * 1000),
+      },
+      update: {}, // já revogado — nada a fazer
+    });
   }
 
-  isRevoked(token: string): boolean {
-    const expiresAt = this.blacklist.get(token);
-    if (!expiresAt) return false;
-    if (Date.now() >= expiresAt) {
-      this.blacklist.delete(token);
-      return false;
-    }
+  /**
+   * Verifica se um jti está revogado. `true` apenas se a linha existe E
+   * ainda não expirou (linhas expiradas são removidas pelo cleanup, mas a
+   * checagem também é tolerante: se `expiresAt <= now`, considera não-revogado
+   * — o JWT original também já expirou nesse ponto, então a checagem
+   * subsequente de `exp` no JwtAuthGuard bloquearia de qualquer forma).
+   */
+  async isRevoked(jti: string): Promise<boolean> {
+    const row = await this.prisma.revokedJti.findUnique({
+      where: { jti },
+      select: { expiresAt: true },
+    });
+    if (!row) return false;
+    if (row.expiresAt.getTime() <= Date.now()) return false;
     return true;
   }
 
-  private purgeExpired(): void {
-    const now = Date.now();
-    let removed = 0;
-    for (const [token, expiresAt] of this.blacklist) {
-      if (now >= expiresAt) {
-        this.blacklist.delete(token);
-        removed++;
-      }
-    }
-    if (removed > 0) {
-      this.logger.debug(`Blacklist cleanup: removed ${removed} expired entries`);
+  private async purgeExpired(): Promise<void> {
+    const { count } = await this.prisma.revokedJti.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+    if (count > 0) {
+      this.logger.debug(`Blacklist cleanup: removed ${count} expired entries`);
     }
   }
 }

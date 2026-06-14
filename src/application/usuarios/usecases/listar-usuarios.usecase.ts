@@ -10,6 +10,10 @@ export class ListarUsuariosUseCase {
   ) {}
 
   async execute(params?: { skip?: number; take?: number }) {
+    // O `select` no repositório já exclui `senha` do payload de DB,
+    // mas mantemos a desestruturação como defesa em profundidade: se um
+    // repositório futuro voltar a trazer o campo por mudança de schema,
+    // ainda assim o caller externo não vaza o hash.
     const usuarios = await this.usuariosRepository.findAll(params);
     return usuarios.map(({ senha: _senha, ...resultado }) => resultado);
   }

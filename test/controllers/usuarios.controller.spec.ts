@@ -8,6 +8,7 @@ import { ListarUsuarioPorIdUseCase } from '../../src/application/usuarios/usecas
 import { ListarUsuarioPorEmailUseCase } from '../../src/application/usuarios/usecases/listar-usuario-por-email.usecase';
 import { AtualizarUsuarioUseCase } from '../../src/application/usuarios/usecases/atualizar-usuario.usecase';
 import { DeletarUsuarioUseCase } from '../../src/application/usuarios/usecases/deletar-usuario.usecase';
+import { ContarUsuariosUseCase } from '../../src/application/usuarios/usecases/contar-usuarios.usecase';
 import { CriarUsuarioDto } from '../../src/application/usuarios/dto/criar-usuario.dto';
 import { AtualizarUsuarioDto } from '../../src/application/usuarios/dto/atualizar-usuario.dto';
 
@@ -30,6 +31,7 @@ describe('UsuariosController', () => {
   let mockListarPorEmailUseCase: jest.Mocked<ListarUsuarioPorEmailUseCase>;
   let mockAtualizarUseCase: jest.Mocked<AtualizarUsuarioUseCase>;
   let mockDeletarUseCase: jest.Mocked<DeletarUsuarioUseCase>;
+  let mockContarUseCase: jest.Mocked<ContarUsuariosUseCase>;
   let mockPerfisRepository: {
     findById: jest.Mock;
     findByNome: jest.Mock;
@@ -72,6 +74,9 @@ describe('UsuariosController', () => {
     mockDeletarUseCase = {
       execute: jest.fn(),
     } as any;
+    mockContarUseCase = {
+      execute: jest.fn(),
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsuariosController],
@@ -83,6 +88,7 @@ describe('UsuariosController', () => {
         { provide: ListarUsuarioPorEmailUseCase, useValue: mockListarPorEmailUseCase },
         { provide: AtualizarUsuarioUseCase, useValue: mockAtualizarUseCase },
         { provide: DeletarUsuarioUseCase, useValue: mockDeletarUseCase },
+        { provide: ContarUsuariosUseCase, useValue: mockContarUseCase },
       ],
     }).compile();
 

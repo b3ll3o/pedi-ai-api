@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../presentation/auth/guards/jwt-auth.guard';
@@ -20,6 +21,7 @@ import { ListarRestaurantesUseCase } from '../../application/use-cases/listar-re
 import { ListarRestaurantePorIdUseCase } from '../../application/use-cases/listar-restaurante-por-id.usecase';
 import { AtualizarRestauranteUseCase } from '../../application/use-cases/atualizar-restaurante.usecase';
 import { DeletarRestauranteUseCase } from '../../application/use-cases/deletar-restaurante.usecase';
+import { ContarRestaurantesUseCase } from '../../application/use-cases/contar-restaurantes.usecase';
 import {
   CriarRestauranteDto,
   AtualizarRestauranteDto,
@@ -36,6 +38,7 @@ export class RestaurantesController {
     private readonly listarRestaurantePorIdUseCase: ListarRestaurantePorIdUseCase,
     private readonly atualizarRestauranteUseCase: AtualizarRestauranteUseCase,
     private readonly deletarRestauranteUseCase: DeletarRestauranteUseCase,
+    private readonly contarRestaurantesUseCase: ContarRestaurantesUseCase,
   ) {}
 
   @Post()
@@ -48,14 +51,20 @@ export class RestaurantesController {
     return this.listarRestaurantesUseCase.execute(parsePagination(page, pageSize));
   }
 
+  // Antes de `GET /:id` para não casar "count" como UUID.
+  @Get('count')
+  async contar() {
+    return { total: await this.contarRestaurantesUseCase.execute() };
+  }
+
   @Get(':id')
-  async listarUm(@Param('id') id: string) {
+  async listarUm(@Param('id', ParseUUIDPipe) id: string) {
     return this.listarRestaurantePorIdUseCase.execute(id);
   }
 
   @Patch(':id')
   async atualizar(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() atualizarRestauranteDto: AtualizarRestauranteDto,
   ) {
     return this.atualizarRestauranteUseCase.execute(id, atualizarRestauranteDto);
@@ -63,7 +72,7 @@ export class RestaurantesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletar(@Param('id') id: string) {
+  async deletar(@Param('id', ParseUUIDPipe) id: string) {
     return this.deletarRestauranteUseCase.execute(id);
   }
 }

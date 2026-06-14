@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -21,6 +22,7 @@ import { ListarUsuarioPorIdUseCase } from '../../../application/usuarios/usecase
 import { ListarUsuarioPorEmailUseCase } from '../../../application/usuarios/usecases/listar-usuario-por-email.usecase';
 import { AtualizarUsuarioUseCase } from '../../../application/usuarios/usecases/atualizar-usuario.usecase';
 import { DeletarUsuarioUseCase } from '../../../application/usuarios/usecases/deletar-usuario.usecase';
+import { ContarUsuariosUseCase } from '../../../application/usuarios/usecases/contar-usuarios.usecase';
 import { CriarUsuarioDto } from '../../../application/usuarios/dto/criar-usuario.dto';
 import { AtualizarUsuarioDto } from '../../../application/usuarios/dto/atualizar-usuario.dto';
 import { parsePagination } from '../../../common/pagination';
@@ -36,6 +38,7 @@ export class UsuariosController {
     private readonly listarUsuarioPorEmailUseCase: ListarUsuarioPorEmailUseCase,
     private readonly atualizarUsuarioUseCase: AtualizarUsuarioUseCase,
     private readonly deletarUsuarioUseCase: DeletarUsuarioUseCase,
+    private readonly contarUsuariosUseCase: ContarUsuariosUseCase,
   ) {}
 
   @Post()
@@ -48,8 +51,15 @@ export class UsuariosController {
     return this.listarUsuariosUseCase.execute(parsePagination(page, pageSize));
   }
 
+  // Antes de `GET /:id` para que o Nest não tente casar "count" como UUID
+  // e dispare um ParseUUIDPipe 400.
+  @Get('count')
+  async contar() {
+    return { total: await this.contarUsuariosUseCase.execute() };
+  }
+
   @Get(':id')
-  async listarUm(@Param('id') id: string) {
+  async listarUm(@Param('id', ParseUUIDPipe) id: string) {
     return this.listarUsuarioPorIdUseCase.execute(id);
   }
 
@@ -59,13 +69,16 @@ export class UsuariosController {
   }
 
   @Patch(':id')
-  async atualizar(@Param('id') id: string, @Body() atualizarUsuarioDto: AtualizarUsuarioDto) {
+  async atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() atualizarUsuarioDto: AtualizarUsuarioDto,
+  ) {
     return this.atualizarUsuarioUseCase.execute(id, atualizarUsuarioDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletar(@Param('id') id: string) {
+  async deletar(@Param('id', ParseUUIDPipe) id: string) {
     return this.deletarUsuarioUseCase.execute(id);
   }
 }

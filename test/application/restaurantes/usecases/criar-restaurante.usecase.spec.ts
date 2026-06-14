@@ -55,7 +55,8 @@ describe('CriarRestauranteUseCase', () => {
   });
 
   it('deve criar restaurante quando dados são válidos', async () => {
-    mockRepository.findByCnpj.mockResolvedValue(null);
+    // findByCnpj não é mais chamado — o @unique do schema + P2002 do
+    // handlePrismaError cobrem tanto a colisão serializada quanto a race.
     mockRepository.create.mockResolvedValue(mockRestaurante);
 
     const result = await useCase.execute(validDto);
@@ -66,31 +67,7 @@ describe('CriarRestauranteUseCase', () => {
     expect(mockRepository.create).toHaveBeenCalled();
   });
 
-  it('deve lançar erro quando CNPJ já existe', async () => {
-    mockRepository.findByCnpj.mockResolvedValue(mockRestaurante);
-
-    await expect(useCase.execute(validDto)).rejects.toThrow('CNPJ já cadastrado');
-  });
-
-  it('deve lançar erro quando horário abertura >= fechamento', async () => {
-    mockRepository.findByCnpj.mockResolvedValue(null);
-    mockRepository.create.mockResolvedValue(mockRestaurante);
-
-    const dtoInvalido = { ...validDto, horarioFechamento: '08:00' }; // antes da abertura
-
-    await expect(useCase.execute(dtoInvalido)).rejects.toThrow(
-      'Horário de abertura deve ser anterior ao fechamento',
-    );
-  });
-
-  it('não deve criar quando findByCnpj lança erro', async () => {
-    mockRepository.findByCnpj.mockRejectedValue(new Error('Erro no banco'));
-
-    await expect(useCase.execute(validDto)).rejects.toThrow('Erro no banco');
-  });
-
-  it('deve converter Prisma P2002 em ConflictException quando CNPJ duplica no insert', async () => {
-    mockRepository.findByCnpj.mockResolvedValue(null);
+  it('deve lançar ConflictException quando CNPJ já existe (P2002 no insert)', async () => {
     const prismaError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
       code: 'P2002',
       clientVersion: 'test',
@@ -101,8 +78,17 @@ describe('CriarRestauranteUseCase', () => {
     await expect(useCase.execute(validDto)).rejects.toThrow('CNPJ já cadastrado');
   });
 
+  it('deve lançar erro quando horário abertura >= fechamento', async () => {
+    mockRepository.create.mockResolvedValue(mockRestaurante);
+
+    const dtoInvalido = { ...validDto, horarioFechamento: '08:00' }; // antes da abertura
+
+    await expect(useCase.execute(dtoInvalido)).rejects.toThrow(
+      'Horário de abertura deve ser anterior ao fechamento',
+    );
+  });
+
   it('deve re-lançar outros erros do Prisma sem transformar', async () => {
-    mockRepository.findByCnpj.mockResolvedValue(null);
     const prismaError = new Prisma.PrismaClientKnownRequestError('Other error', {
       code: 'P2003',
       clientVersion: 'test',
@@ -113,7 +99,6 @@ describe('CriarRestauranteUseCase', () => {
   });
 
   it('deve re-lançar erros genéricos do create sem transformar', async () => {
-    mockRepository.findByCnpj.mockResolvedValue(null);
     const genericError = new Error('Database connection lost');
     mockRepository.create.mockRejectedValue(genericError);
 
@@ -122,7 +107,6 @@ describe('CriarRestauranteUseCase', () => {
 
   it('deve lançar BadRequest quando CNPJ é inválido (checksum)', async () => {
     const dtoCnpjInvalido = { ...validDto, cnpj: '11.111.111/0001-11' };
-    mockRepository.findByCnpj.mockResolvedValue(null);
 
     await expect(useCase.execute(dtoCnpjInvalido)).rejects.toThrow(/CNPJ/);
     expect(mockRepository.create).not.toHaveBeenCalled();

@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -20,6 +21,7 @@ import { ListarPermissoesUseCase } from '../../../application/permissoes/usecase
 import { ListarPermissaoPorIdUseCase } from '../../../application/permissoes/usecases/listar-permissao-por-id.usecase';
 import { AtualizarPermissaoUseCase } from '../../../application/permissoes/usecases/atualizar-permissao.usecase';
 import { DeletarPermissaoUseCase } from '../../../application/permissoes/usecases/deletar-permissao.usecase';
+import { ContarPermissoesUseCase } from '../../../application/permissoes/usecases/contar-permissoes.usecase';
 import {
   CriarPermissaoDto,
   AtualizarPermissaoDto,
@@ -36,6 +38,7 @@ export class PermissoesController {
     private readonly listarPermissaoPorIdUseCase: ListarPermissaoPorIdUseCase,
     private readonly atualizarPermissaoUseCase: AtualizarPermissaoUseCase,
     private readonly deletarPermissaoUseCase: DeletarPermissaoUseCase,
+    private readonly contarPermissoesUseCase: ContarPermissoesUseCase,
   ) {}
 
   @Post()
@@ -48,19 +51,28 @@ export class PermissoesController {
     return this.listarPermissoesUseCase.execute(parsePagination(page, pageSize));
   }
 
+  // Antes de `GET /:id` para não casar "count" como UUID.
+  @Get('count')
+  async contar() {
+    return { total: await this.contarPermissoesUseCase.execute() };
+  }
+
   @Get(':id')
-  async listarUm(@Param('id') id: string) {
+  async listarUm(@Param('id', ParseUUIDPipe) id: string) {
     return this.listarPermissaoPorIdUseCase.execute(id);
   }
 
   @Patch(':id')
-  async atualizar(@Param('id') id: string, @Body() atualizarPermissaoDto: AtualizarPermissaoDto) {
+  async atualizar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() atualizarPermissaoDto: AtualizarPermissaoDto,
+  ) {
     return this.atualizarPermissaoUseCase.execute(id, atualizarPermissaoDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletar(@Param('id') id: string) {
+  async deletar(@Param('id', ParseUUIDPipe) id: string) {
     return this.deletarPermissaoUseCase.execute(id);
   }
 }

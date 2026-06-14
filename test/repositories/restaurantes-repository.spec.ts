@@ -32,6 +32,7 @@ describe('RestaurantesRepositoryImpl', () => {
       restaurante: {
         create: jest.fn(),
         findMany: jest.fn(),
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
       },
@@ -89,18 +90,18 @@ describe('RestaurantesRepositoryImpl', () => {
 
   describe('findById', () => {
     it('deve retornar restaurante quando existe', async () => {
-      mockPrisma.restaurante.findUnique.mockResolvedValue(mockRestaurante);
+      mockPrisma.restaurante.findFirst.mockResolvedValue(mockRestaurante);
 
       const result = await repository.findById(mockRestaurante.id);
 
       expect(result).toEqual(mockRestaurante);
-      expect(mockPrisma.restaurante.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.restaurante.findFirst).toHaveBeenCalledWith({
         where: { id: mockRestaurante.id, deletedAt: null },
       });
     });
 
     it('deve retornar null quando não existe', async () => {
-      mockPrisma.restaurante.findUnique.mockResolvedValue(null);
+      mockPrisma.restaurante.findFirst.mockResolvedValue(null);
 
       const result = await repository.findById('non-existent-id');
 
@@ -110,27 +111,29 @@ describe('RestaurantesRepositoryImpl', () => {
 
   describe('findByCnpj', () => {
     it('deve retornar restaurante quando CNPJ existe', async () => {
-      mockPrisma.restaurante.findUnique.mockResolvedValue(mockRestaurante);
+      mockPrisma.restaurante.findFirst.mockResolvedValue(mockRestaurante);
 
       const result = await repository.findByCnpj(mockRestaurante.cnpj);
 
       expect(result).toEqual(mockRestaurante);
-      expect(mockPrisma.restaurante.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.restaurante.findFirst).toHaveBeenCalledWith({
         where: { cnpj: mockRestaurante.cnpj, deletedAt: null },
       });
     });
 
     it('deve retornar null quando CNPJ não existe', async () => {
-      mockPrisma.restaurante.findUnique.mockResolvedValue(null);
+      mockPrisma.restaurante.findFirst.mockResolvedValue(null);
 
       const result = await repository.findByCnpj('00000000000000');
 
+      const result2 = await repository.findByCnpj('00000000000000');
+      expect(result2).toBeNull();
       expect(result).toBeNull();
     });
   });
 
   describe('update', () => {
-    it('deve atualizar restaurante', async () => {
+    it('deve atualizar restaurante (single query, sem pre-check)', async () => {
       const updateData: UpdateRestauranteInput = { nome: 'Novo Nome' };
       const updatedRestaurante = { ...mockRestaurante, nome: 'Novo Nome' };
 
@@ -140,9 +143,23 @@ describe('RestaurantesRepositoryImpl', () => {
 
       expect(result.nome).toBe('Novo Nome');
       expect(mockPrisma.restaurante.update).toHaveBeenCalledWith({
-        where: { id: mockRestaurante.id, deletedAt: null },
+        where: { id: mockRestaurante.id },
         data: updateData,
       });
+      // Sem pre-check: o use-case já fez findById. P2025 vira 404 via
+      // handlePrismaError no caller.
+      expect(mockPrisma.restaurante.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('deve propagar P2025 do update (NotFoundException vem do handlePrismaError no caller)', async () => {
+      const { Prisma } = await import('@prisma/client');
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: 'test',
+      });
+      mockPrisma.restaurante.update.mockRejectedValue(p2025);
+
+      await expect(repository.update('uuid-invalido', { nome: 'X' })).rejects.toBe(p2025);
     });
   });
 

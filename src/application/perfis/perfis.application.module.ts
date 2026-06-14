@@ -9,6 +9,7 @@ import { AtualizarPerfilUseCase } from './usecases/atualizar-perfil.usecase';
 import { DeletarPerfilUseCase } from './usecases/deletar-perfil.usecase';
 import { AssociarPermissoesPerfilUseCase } from './usecases/associar-permissoes-perfil.usecase';
 import { DesassociarPermissaoPerfilUseCase } from './usecases/desassociar-permissao-perfil.usecase';
+import { ContarPerfisUseCase } from './usecases/contar-perfis.usecase';
 import { PerfisController } from '../../presentation/perfis/controllers/perfis.controller';
 import { AuthModule } from '../../presentation/auth/auth.module';
 
@@ -23,6 +24,7 @@ import { AuthModule } from '../../presentation/auth/auth.module';
     DeletarPerfilUseCase,
     AssociarPermissoesPerfilUseCase,
     DesassociarPermissaoPerfilUseCase,
+    ContarPerfisUseCase,
     PerfisController,
   ],
   controllers: [PerfisController],
@@ -34,6 +36,7 @@ import { AuthModule } from '../../presentation/auth/auth.module';
     DeletarPerfilUseCase,
     AssociarPermissoesPerfilUseCase,
     DesassociarPermissaoPerfilUseCase,
+    ContarPerfisUseCase,
   ],
 })
 export class PerfisModule {}

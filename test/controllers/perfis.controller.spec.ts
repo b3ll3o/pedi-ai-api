@@ -9,6 +9,7 @@ import { AtualizarPerfilUseCase } from '../../src/application/perfis/usecases/at
 import { DeletarPerfilUseCase } from '../../src/application/perfis/usecases/deletar-perfil.usecase';
 import { AssociarPermissoesPerfilUseCase } from '../../src/application/perfis/usecases/associar-permissoes-perfil.usecase';
 import { DesassociarPermissaoPerfilUseCase } from '../../src/application/perfis/usecases/desassociar-permissao-perfil.usecase';
+import { ContarPerfisUseCase } from '../../src/application/perfis/usecases/contar-perfis.usecase';
 import { CriarPerfilDto } from '../../src/application/perfis/dto/perfil.dto';
 
 describe('PerfisController', () => {
@@ -32,6 +33,7 @@ describe('PerfisController', () => {
   let mockDeletarUseCase: jest.Mocked<DeletarPerfilUseCase>;
   let mockAssociarUseCase: jest.Mocked<AssociarPermissoesPerfilUseCase>;
   let mockDesassociarUseCase: jest.Mocked<DesassociarPermissaoPerfilUseCase>;
+  let mockContarUseCase: jest.Mocked<ContarPerfisUseCase>;
   let mockPerfisRepository: {
     findById: jest.Mock;
     findByNome: jest.Mock;
@@ -63,6 +65,7 @@ describe('PerfisController', () => {
     mockDeletarUseCase = { execute: jest.fn() } as any;
     mockAssociarUseCase = { execute: jest.fn() } as any;
     mockDesassociarUseCase = { execute: jest.fn() } as any;
+    mockContarUseCase = { execute: jest.fn() } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PerfisController],
@@ -75,6 +78,7 @@ describe('PerfisController', () => {
         { provide: DeletarPerfilUseCase, useValue: mockDeletarUseCase },
         { provide: AssociarPermissoesPerfilUseCase, useValue: mockAssociarUseCase },
         { provide: DesassociarPermissaoPerfilUseCase, useValue: mockDesassociarUseCase },
+        { provide: ContarPerfisUseCase, useValue: mockContarUseCase },
       ],
     }).compile();
 

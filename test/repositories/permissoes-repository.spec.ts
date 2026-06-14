@@ -41,19 +41,19 @@ describe('PermissoesRepositoryImpl', () => {
 
   describe('findById', () => {
     it('deve retornar permissao quando encontrada', async () => {
-      mockPrisma.permissao.findUnique.mockResolvedValue(mockPermissao);
+      mockPrisma.permissao.findFirst.mockResolvedValue(mockPermissao);
 
       const resultado = await repository.findById('uuid-permissao-test');
 
       expect(resultado).toEqual(mockPermissao);
-      expect(mockPrisma.permissao.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.permissao.findFirst).toHaveBeenCalledWith({
         where: { id: 'uuid-permissao-test', deletedAt: null },
         include: { perfis: true },
       });
     });
 
     it('deve retornar null quando permissao nao encontrada', async () => {
-      mockPrisma.permissao.findUnique.mockResolvedValue(null);
+      mockPrisma.permissao.findFirst.mockResolvedValue(null);
 
       const resultado = await repository.findById('uuid-invalido');
 
@@ -137,7 +137,7 @@ describe('PermissoesRepositoryImpl', () => {
   });
 
   describe('update', () => {
-    it('deve atualizar permissao com dados fornecidos', async () => {
+    it('deve atualizar permissao com dados fornecidos (single query, sem pre-check)', async () => {
       const updateData = { nome: 'Nome Atualizado' };
       const permissaoAtualizada = { ...mockPermissao, ...updateData };
       mockPrisma.permissao.update.mockResolvedValue(permissaoAtualizada);
@@ -146,10 +146,24 @@ describe('PermissoesRepositoryImpl', () => {
 
       expect(resultado).toEqual(permissaoAtualizada);
       expect(mockPrisma.permissao.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-permissao-test', deletedAt: null },
+        where: { id: 'uuid-permissao-test' },
         data: updateData,
         include: { perfis: true },
       });
+      // Sem pre-check: o use-case já fez findById. P2025 vira 404 via
+      // handlePrismaError no caller.
+      expect(mockPrisma.permissao.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('deve propagar P2025 do update (NotFoundException vem do handlePrismaError no caller)', async () => {
+      const { Prisma } = await import('@prisma/client');
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: 'test',
+      });
+      mockPrisma.permissao.update.mockRejectedValue(p2025);
+
+      await expect(repository.update('uuid-invalido', { nome: 'X' })).rejects.toBe(p2025);
     });
   });
 

@@ -5,6 +5,7 @@ import {
 } from '../../domain/repositories/restaurantes-repository.interface';
 import { RestauranteEntity } from '../../domain/entities/restaurante.entity';
 import { AtualizarRestauranteDto, RestauranteResponseDto } from '../dto/restaurante.dto';
+import { handlePrismaError } from '../../../common/prisma-errors';
 
 export class AtualizarRestauranteUseCase {
   constructor(
@@ -26,7 +27,14 @@ export class AtualizarRestauranteUseCase {
       throw new ConflictException('Horário de abertura deve ser anterior ao fechamento');
     }
 
-    const updated = await this.repository.update(id, dto);
-    return RestauranteResponseDto.fromEntity(updated);
+    try {
+      const updated = await this.repository.update(id, dto);
+      return RestauranteResponseDto.fromEntity(updated);
+    } catch (error) {
+      // P2002: race condition — dois PATCH concorrentes no mesmo CNPJ
+      // (o @unique CNPJ é a verdadeira fonte da verdade; o repository já
+      // filtra soft-delete, mas não verifica duplicata de CNPJ).
+      handlePrismaError(error, 'CNPJ já cadastrado', 'Restaurante nao encontrado');
+    }
   }
 }

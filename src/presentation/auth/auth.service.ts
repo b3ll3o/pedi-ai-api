@@ -1,5 +1,13 @@
-import { Injectable, UnauthorizedException, ConflictException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  UnauthorizedException,
+  ConflictException,
+  Inject,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'node:crypto';
 import {
   IUsuariosRepository,
   IUSUARIOS_REPOSITORY,
@@ -18,6 +26,7 @@ import { TokenResponseDto } from '../../application/auth/dto/token-response.dto'
 import { RefreshTokenDto } from '../../application/auth/dto/refresh-token.dto';
 import { TokenBlacklistService } from '../../infrastructure/auth/token-blacklist.service';
 import { handlePrismaError } from '../../common/prisma-errors';
+import { Prisma } from '@prisma/client';
 
 // Hash bcrypt pré-computado para equalizar timing de login quando o usuário
 // não existe. Comparar contra um hash dummy custa o mesmo tempo de CPU que
@@ -29,7 +38,24 @@ const DUMMY_BCRYPT_HASH = '$2b$12$CwTycUXWue0Thq9StjUM0uJ8pP3R8Vj1xXrZ9qHK7bZ4Yt
 const DEFAULT_PERFIL_NOME = 'USUARIO';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
+  private readonly logger = new Logger(AuthService.name);
+
+  async onModuleInit(): Promise<void> {
+    // Falha rápido se DUMMY_BCRYPT_HASH estiver corrompido: sem isso, o bug
+    // só aparece no primeiro login (cada request explode com 500). Validação
+    // por regex (não por bcrypt.compare) — custa microssegundos em vez de
+    // ~100ms, e o ponto é só garantir que o literal tem o formato esperado
+    // (o bcrypt real já valida o hash no primeiro login).
+    if (!/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(DUMMY_BCRYPT_HASH)) {
+      const err = new Error(
+        `DUMMY_BCRYPT_HASH malformado — login vai quebrar em runtime (esperado formato bcrypt $2x$NN$...)`,
+      );
+      this.logger.error(err.message);
+      throw err;
+    }
+  }
+
   // O tipo StringValue (template literal) é exigido por @nestjs/jwt 11+; o cast
   // é seguro porque validamos o formato em parseExpiresIn() no momento do uso.
   private readonly JWT_ACCESS_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ??
@@ -133,12 +159,19 @@ export class AuthService {
     await this.refreshTokenRepository.deleteByUserId(userId);
     if (accessToken) {
       try {
-        const decoded = this.jwtService.decode(accessToken) as { exp?: number } | null;
-        if (decoded?.exp) {
-          this.tokenBlacklist.revoke(accessToken, decoded.exp * 1000);
+        // jwtService.verify() valida a assinatura e o `alg` antes de decodificar
+        // — sem isso, um atacante pode mandar `Bearer garbage.yyyy` com payload
+        // `{exp: 9e15}` e poluir a blacklist indefinidamente (DoS de memória).
+        const decoded = this.jwtService.verify<{ exp: number; jti?: string }>(accessToken);
+        if (decoded?.jti && decoded?.exp) {
+          // Persiste o jti na tabela revoked_jtis (Postgres) — sobrevive a
+          // restarts e é visível para todas as instâncias do backend.
+          await this.tokenBlacklist.revoke(decoded.jti, decoded.exp, userId);
         }
       } catch {
-        // Token inválido — não revoga
+        // Token inválido (assinatura, expiração ou formato) — não revoga.
+        // Silencioso por design: logout deve sempre succeed do ponto de vista
+        // do cliente (o refresh token já foi invalidado acima).
       }
     }
   }
@@ -161,31 +194,24 @@ export class AuthService {
     // Email deliberadamente fora do payload: é PII desnecessária (o backend
     // revalida via DB no JwtStrategy.validate) e qualquer log de token
     // (ex: jwt.io, logs de proxy) vaza o email do usuário.
-    const payload = { sub: userId, perfilId };
+    // jti: necessário para revogação por logout (TokenBlacklistService
+    // persiste o jti no Postgres; JwtStrategy valida o jti em cada request).
+    const payload = { sub: userId, perfilId, jti: this.generateJti() };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       expiresIn: this.JWT_ACCESS_EXPIRES_IN,
     });
 
-    // Deriva expiresIn do próprio `exp` claim do token assinado em vez de
-    // re-parsear o env var: garante que o valor reportado ao cliente bate
-    // exatamente com o que o JWT contém, sem drift se a string for malformada.
-    const expiresIn = this.expiresInFromToken(accessToken);
+    // expiresIn (RFC 6749: "segundos até expirar a partir de agora"). Como
+    // acabamos de assinar o token, iat ≈ now e a duração efetiva é o próprio
+    // TTL do env var — não vale a pena re-decodificar o JWT só para confirmar.
+    // O env var já é validado por parseExpiresInSeconds() em generateRefreshToken.
+    const expiresIn = this.parseExpiresInSeconds(this.JWT_ACCESS_EXPIRES_IN);
 
     return {
       accessToken,
       expiresIn,
     };
-  }
-
-  private expiresInFromToken(token: string): number {
-    const decoded = this.jwtService.decode(token) as { exp?: number; iat?: number } | null;
-    if (!decoded?.exp || !decoded?.iat) {
-      // Fallback defensivo: se o token não tem exp/iat (não deveria acontecer
-      // com @nestjs/jwt), usa o parser do env var.
-      return this.parseExpiresInSeconds(this.JWT_ACCESS_EXPIRES_IN);
-    }
-    return Math.max(0, decoded.exp - decoded.iat);
   }
 
   private async generateRefreshToken(userId: string): Promise<string> {
@@ -215,7 +241,20 @@ export class AuthService {
     try {
       await this.refreshTokenRepository.rotate(oldToken, newRefreshTokenJwt, userId, expiresAt);
     } catch (error) {
-      handlePrismaError(error, 'Refresh token inválido ou expirado');
+      // P2002: outro request emitiu o mesmo token (colisão de jti, improvável
+      // mas possível). P2025: o token antigo já foi consumido por um refresh
+      // concorrente — esperado em race, deve virar 401 não 500.
+      //
+      // Aqui NÃO usamos handlePrismaError: ele traduz P2025 em 404 NotFound,
+      // mas do ponto de vista do cliente isto não é "recurso não encontrado"
+      // e sim "credencial inválida / sessão expirada". 401 é a resposta
+      // semanticamente correta e bate com o resto do fluxo de refresh.
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002' || error.code === 'P2025') {
+          throw new UnauthorizedException('Refresh token inválido ou expirado');
+        }
+      }
+      throw error;
     }
 
     return newRefreshTokenJwt;
@@ -226,8 +265,11 @@ export class AuthService {
   // que payload + iat + secret coincidam (logins paralelos, retry, etc).
   // Sem isso, o unique constraint em refresh_tokens.token estoura P2002 e
   // o request cai no 500 do filtro global.
+  // Usa crypto.randomBytes (CSPRNG) e não Math.random: colisões em Math.random
+  // são raras mas produzem o P2002 genérico mapeado para "Refresh token
+  // inválido" — o que mascara a causa raiz em logs de produção.
   private generateJti(): string {
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    return randomBytes(16).toString('hex');
   }
 
   // Cap superior de TTL. 90 dias é folgado para qualquer access token razoável

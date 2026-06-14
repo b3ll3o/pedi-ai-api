@@ -7,6 +7,7 @@ import { ListarPermissoesUseCase } from './usecases/listar-permissoes.usecase';
 import { ListarPermissaoPorIdUseCase } from './usecases/listar-permissao-por-id.usecase';
 import { AtualizarPermissaoUseCase } from './usecases/atualizar-permissao.usecase';
 import { DeletarPermissaoUseCase } from './usecases/deletar-permissao.usecase';
+import { ContarPermissoesUseCase } from './usecases/contar-permissoes.usecase';
 import { PermissoesController } from '../../presentation/permissoes/controllers/permissoes.controller';
 import { AuthModule } from '../../presentation/auth/auth.module';
 
@@ -19,6 +20,7 @@ import { AuthModule } from '../../presentation/auth/auth.module';
     ListarPermissaoPorIdUseCase,
     AtualizarPermissaoUseCase,
     DeletarPermissaoUseCase,
+    ContarPermissoesUseCase,
     PermissoesController,
   ],
   controllers: [PermissoesController],
@@ -28,6 +30,7 @@ import { AuthModule } from '../../presentation/auth/auth.module';
     ListarPermissaoPorIdUseCase,
     AtualizarPermissaoUseCase,
     DeletarPermissaoUseCase,
+    ContarPermissoesUseCase,
   ],
 })
 export class PermissoesModule {}

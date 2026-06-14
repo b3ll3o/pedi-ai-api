@@ -28,6 +28,7 @@ describe('AuthService', () => {
   let mockPerfisRepository: jest.Mocked<IPerfisRepository>;
   let mockSenhaHashService: jest.Mocked<ISenhaHashService>;
   let mockJwtService: jest.Mocked<JwtService>;
+  let mockTokenBlacklist: { revoke: jest.Mock; isRevoked: jest.Mock };
 
   beforeEach(() => {
     mockUsuariosRepository = {
@@ -35,6 +36,7 @@ describe('AuthService', () => {
       findByEmail: jest.fn(),
       findByEmailIncludingDeleted: jest.fn(),
       findAll: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
@@ -52,6 +54,7 @@ describe('AuthService', () => {
       findById: jest.fn(),
       findByNome: jest.fn(),
       findAll: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
@@ -73,12 +76,17 @@ describe('AuthService', () => {
       decode: jest.fn(),
     } as unknown as jest.Mocked<JwtService>;
 
+    mockTokenBlacklist = {
+      revoke: jest.fn().mockResolvedValue(undefined),
+      isRevoked: jest.fn().mockResolvedValue(false),
+    };
+
     authService = new AuthService(
       mockUsuariosRepository,
       mockRefreshTokenRepository,
       mockPerfisRepository,
       mockSenhaHashService,
-      { revoke: jest.fn(), isRevoked: jest.fn() } as any,
+      mockTokenBlacklist as any,
       mockJwtService,
     );
   });
@@ -150,30 +158,33 @@ describe('AuthService', () => {
       expect(refreshPayloads[0].jti).not.toEqual(refreshPayloads[1].jti);
     });
 
-    it('deve derivar expiresIn do próprio exp/iat do token (caminho feliz)', async () => {
+    it('deve derivar expiresIn do env var JWT_EXPIRES_IN (default 15m = 900s)', async () => {
       mockUsuariosRepository.findByEmail.mockResolvedValue(mockUsuario);
       mockSenhaHashService.compare.mockResolvedValue(true);
       mockJwtService.signAsync
         .mockResolvedValueOnce('access-token')
         .mockResolvedValueOnce('refresh-token');
       mockRefreshTokenRepository.create.mockResolvedValue({} as any);
-      // iat=1000, exp=1900 → expiresIn = 900
-      mockJwtService.decode.mockReturnValue({ iat: 1000, exp: 1900 });
 
       const result = await authService.login(loginDto);
 
+      // JWT_EXPIRES_IN default = '15m' → 900s. Não re-decodificamos o JWT
+      // (zero-value work): o env var já é validado por parseExpiresInSeconds
+      // em generateRefreshToken, e iat ≈ now no momento do sign.
       expect(result.expiresIn).toBe(900);
     });
 
-    it('deve usar fallback parseExpiresInSeconds quando decode não retornar exp', async () => {
+    it('deve usar parseExpiresInSeconds quando decode nao e mais necessario (smoke)', async () => {
+      // Mantido como smoke test: garantir que login funciona quando o env var
+      // default é o esperado, sem depender de decode() do token. Substitui o
+      // antigo teste de "fallback quando decode retorna null" — esse caminho
+      // não existe mais (removido junto com expiresInFromToken).
       mockUsuariosRepository.findByEmail.mockResolvedValue(mockUsuario);
       mockSenhaHashService.compare.mockResolvedValue(true);
       mockJwtService.signAsync
         .mockResolvedValueOnce('access-token')
         .mockResolvedValueOnce('refresh-token');
       mockRefreshTokenRepository.create.mockResolvedValue({} as any);
-      // decode retorna null → fallback para parseExpiresInSeconds('15m') = 900
-      mockJwtService.decode.mockReturnValue(null);
 
       const result = await authService.login(loginDto);
 
@@ -273,14 +284,22 @@ describe('AuthService', () => {
       expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(mockUsuario.id);
     });
 
-    it('deve revogar o access token se fornecido', async () => {
+    it('deve revogar o access token se fornecido e a assinatura for válida', async () => {
       mockRefreshTokenRepository.deleteByUserId.mockResolvedValue();
       const futureExp = Math.floor(Date.now() / 1000) + 900;
-      mockJwtService.decode.mockReturnValue({ exp: futureExp });
+      // Agora usamos verify() em vez de decode() — sem verificação de
+      // assinatura o atacante pode injetar tokens forjados na blacklist.
+      // O jti é extraído e passado para o TokenBlacklistService.revoke.
+      mockJwtService.verify.mockReturnValue({ jti: 'access-jti-1', exp: futureExp } as any);
 
       await authService.logout(mockUsuario.id, 'access-token-abc');
 
-      expect(mockJwtService.decode).toHaveBeenCalledWith('access-token-abc');
+      expect(mockJwtService.verify).toHaveBeenCalledWith('access-token-abc');
+      expect(mockTokenBlacklist.revoke as jest.Mock).toHaveBeenCalledWith(
+        'access-jti-1',
+        futureExp,
+        mockUsuario.id,
+      );
     });
   });
 
@@ -389,7 +408,7 @@ describe('AuthService', () => {
   });
 
   describe('refreshToken - rotação com erro Prisma', () => {
-    it('deve propagar o erro Prisma quando rotate falha (passa por handlePrismaError sem notFoundMessage)', async () => {
+    it('P2025 em rotate vira UnauthorizedException (refresh concorrente já consumiu o token)', async () => {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -407,23 +426,27 @@ describe('AuthService', () => {
       });
       mockRefreshTokenRepository.rotate.mockRejectedValue(prismaError);
 
+      // P2025 = refresh concorrente já consumiu o token. Antes caía como 500
+      // (PrismaClientKnownRequestError cru escapava); depois virou 404 via
+      // handlePrismaError; agora 401 direto — semanticamente é "credencial
+      // inválida / sessão expirada", não "recurso não encontrado".
       await expect(authService.refreshToken({ refreshToken: 'old-token' })).rejects.toThrow(
-        Prisma.PrismaClientKnownRequestError,
+        UnauthorizedException,
       );
     });
   });
 
   describe('logout com access token', () => {
-    it('não deve revogar se decoded não tem exp', async () => {
+    it('não deve revogar se verify retorna payload sem exp', async () => {
       mockRefreshTokenRepository.deleteByUserId.mockResolvedValue();
-      mockJwtService.decode.mockReturnValue({} as any);
+      mockJwtService.verify.mockReturnValue({} as any);
 
       await expect(authService.logout(mockUsuario.id, 'token-sem-exp')).resolves.toBeUndefined();
     });
 
-    it('não deve revogar se decode lança erro (token inválido)', async () => {
+    it('não deve revogar se verify lança erro (token inválido)', async () => {
       mockRefreshTokenRepository.deleteByUserId.mockResolvedValue();
-      mockJwtService.decode.mockImplementation(() => {
+      mockJwtService.verify.mockImplementation(() => {
         throw new Error('invalid token');
       });
 
@@ -462,7 +485,7 @@ describe('AuthService', () => {
         mockRefreshTokenRepository,
         mockPerfisRepository,
         mockSenhaHashService,
-        { revoke: jest.fn(), isRevoked: jest.fn() } as any,
+        mockTokenBlacklist as any,
         mockJwtService,
       );
     };

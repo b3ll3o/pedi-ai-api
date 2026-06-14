@@ -26,23 +26,29 @@ export class RestaurantesRepositoryImpl implements IRestaurantesRepository {
     return restaurantes as Restaurante[];
   }
 
+  async count(): Promise<number> {
+    return this.prisma.restaurante.count({ where: { deletedAt: null, ativo: true } });
+  }
+
   async findById(id: string): Promise<Restaurante | null> {
-    const restaurante = await this.prisma.restaurante.findUnique({
+    const restaurante = await this.prisma.restaurante.findFirst({
       where: { id, deletedAt: null },
     });
     return restaurante as Restaurante | null;
   }
 
   async findByCnpj(cnpj: string): Promise<Restaurante | null> {
-    const restaurante = await this.prisma.restaurante.findUnique({
+    const restaurante = await this.prisma.restaurante.findFirst({
       where: { cnpj, deletedAt: null },
     });
     return restaurante as Restaurante | null;
   }
 
   async update(id: string, data: UpdateRestauranteInput): Promise<Restaurante> {
+    // Single-query: o use-case já fez findById. P2025 aqui = delete
+    // concorrente → 404 via handlePrismaError no caller.
     const restaurante = await this.prisma.restaurante.update({
-      where: { id, deletedAt: null },
+      where: { id },
       data,
     });
     return restaurante as Restaurante;

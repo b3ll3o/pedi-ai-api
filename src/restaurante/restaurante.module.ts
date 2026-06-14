@@ -7,6 +7,7 @@ import { ListarRestaurantesUseCase } from './application/use-cases/listar-restau
 import { ListarRestaurantePorIdUseCase } from './application/use-cases/listar-restaurante-por-id.usecase';
 import { AtualizarRestauranteUseCase } from './application/use-cases/atualizar-restaurante.usecase';
 import { DeletarRestauranteUseCase } from './application/use-cases/deletar-restaurante.usecase';
+import { ContarRestaurantesUseCase } from './application/use-cases/contar-restaurantes.usecase';
 import { AuthModule } from '../presentation/auth/auth.module';
 import { PrismaModule } from '../infrastructure/database/prisma/prisma.module';
 
@@ -23,6 +24,7 @@ import { PrismaModule } from '../infrastructure/database/prisma/prisma.module';
     ListarRestaurantePorIdUseCase,
     AtualizarRestauranteUseCase,
     DeletarRestauranteUseCase,
+    ContarRestaurantesUseCase,
   ],
   exports: [IRESTAURANTES_REPOSITORY],
 })

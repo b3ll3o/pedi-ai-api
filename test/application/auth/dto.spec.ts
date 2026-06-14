@@ -19,8 +19,21 @@ describe('Auth DTOs', () => {
       expect(errors[0].property).toBe('email');
     });
 
-    it('should fail with short password', async () => {
+    it('should pass with short password (no MinLength — checked via bcrypt, not DTO)', async () => {
+      // Senha curta é responsabilidade do registro e do bcrypt.compare no
+      // AuthService.login. Tirar o @MinLength do LoginDto é proposital: o
+      // caminho de erro fica uniforme (sempre 401) sem vazar existência de
+      // email via 400 vs 401.
       const dto = plainToInstance(LoginDto, { email: 'test@test.com', senha: '123' });
+      const errors = await validate(dto);
+      expect(errors.length).toBe(0);
+    });
+
+    it('should fail with password longer than bcrypt max (72 bytes)', async () => {
+      const dto = plainToInstance(LoginDto, {
+        email: 'test@test.com',
+        senha: 'a'.repeat(73),
+      });
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0].property).toBe('senha');

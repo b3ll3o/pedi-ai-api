@@ -12,7 +12,7 @@ export class PermissoesRepositoryImpl implements IPermissoesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Permissao | null> {
-    const permissao = await this.prisma.permissao.findUnique({
+    const permissao = await this.prisma.permissao.findFirst({
       where: { id, deletedAt: null },
       include: { perfis: true },
     });
@@ -40,6 +40,10 @@ export class PermissoesRepositoryImpl implements IPermissoesRepository {
     return permissoes as Permissao[];
   }
 
+  async count(): Promise<number> {
+    return this.prisma.permissao.count({ where: { deletedAt: null } });
+  }
+
   async create(data: CriarPermissaoParams): Promise<Permissao> {
     const permissao = await this.prisma.permissao.create({
       data,
@@ -48,8 +52,10 @@ export class PermissoesRepositoryImpl implements IPermissoesRepository {
   }
 
   async update(id: string, data: AtualizarPermissaoParams): Promise<Permissao> {
+    // Single-query: o use-case já fez findById. P2025 aqui = delete
+    // concorrente → 404 via handlePrismaError no caller.
     const permissao = await this.prisma.permissao.update({
-      where: { id, deletedAt: null },
+      where: { id },
       data,
       include: { perfis: true },
     });

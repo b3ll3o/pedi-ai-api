@@ -17,7 +17,6 @@ describe('CurrentUserDecorator', () => {
     it('deve retornar o usuario completo quando data é undefined', () => {
       const mockUser: RequestWithUser['user'] = {
         userId: 'user-123',
-        email: 'test@example.com',
         perfilId: 'perfil-123',
       };
 
@@ -30,7 +29,6 @@ describe('CurrentUserDecorator', () => {
     it('deve retornar o usuario completo com todos os campos', () => {
       const mockUser: RequestWithUser['user'] = {
         userId: 'user-456',
-        email: 'admin@test.com',
         perfilId: 'perfil-admin',
       };
 
@@ -39,7 +37,7 @@ describe('CurrentUserDecorator', () => {
 
       expect(result).toEqual(mockUser);
       expect((result as RequestWithUser['user']).userId).toBe('user-456');
-      expect((result as RequestWithUser['user']).email).toBe('admin@test.com');
+      expect((result as RequestWithUser['user']).perfilId).toBe('perfil-admin');
     });
   });
 
@@ -47,7 +45,6 @@ describe('CurrentUserDecorator', () => {
     it('deve retornar o campo userId quando passado "userId"', () => {
       const mockUser: RequestWithUser['user'] = {
         userId: 'user-123',
-        email: 'test@example.com',
         perfilId: 'perfil-123',
       };
 
@@ -57,23 +54,9 @@ describe('CurrentUserDecorator', () => {
       expect(result).toBe('user-123');
     });
 
-    it('deve retornar o campo email quando passado "email"', () => {
-      const mockUser: RequestWithUser['user'] = {
-        userId: 'user-123',
-        email: 'test@example.com',
-        perfilId: 'perfil-123',
-      };
-
-      const context = createMockContext(mockUser);
-      const result = currentUserFactory('email', context);
-
-      expect(result).toBe('test@example.com');
-    });
-
     it('deve retornar o campo perfilId quando passado "perfilId"', () => {
       const mockUser: RequestWithUser['user'] = {
         userId: 'user-123',
-        email: 'test@example.com',
         perfilId: 'perfil-123',
       };
 
@@ -88,7 +71,6 @@ describe('CurrentUserDecorator', () => {
     it('deve funcionar com perfilId null', () => {
       const mockUser: RequestWithUser['user'] = {
         userId: 'user-minimo',
-        email: 'minimo@test.com',
         perfilId: null,
       };
 

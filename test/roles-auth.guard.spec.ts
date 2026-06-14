@@ -13,6 +13,7 @@ describe('RolesAuthGuard', () => {
     findById: jest.Mock;
     findByNome: jest.Mock;
     findAll: jest.Mock;
+    count: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     softDelete: jest.Mock;
@@ -58,6 +59,7 @@ describe('RolesAuthGuard', () => {
       findById: jest.fn(),
       findByNome: jest.fn(),
       findAll: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
@@ -298,6 +300,91 @@ describe('RolesAuthGuard', () => {
       );
 
       await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  // Estes testes exercem o checkRoles extraído do guard (sem o super.canActivate
+  // do JwtAuthGuard, que precisa de passport init) para validar o cache TTL que
+  // evita o N+1 em todo request admin. O resto da suíte usa TestableRolesAuthGuard
+  // para isolar do JwtAuthGuard, mas isso pula o cache.
+  describe('cache de perfil no RolesAuthGuard real', () => {
+    const mockContextSemRoles = (user: unknown) =>
+      ({
+        switchToHttp: () => ({
+          getRequest: () => ({ user }),
+          getResponse: () => ({}),
+        }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
+      }) as unknown as ExecutionContext;
+
+    it('consulta o DB na primeira vez e reusa o cache nas chamadas seguintes', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([Roles.ADMIN]);
+      mockPerfisRepository.findById.mockResolvedValue(mockPerfilAdmin);
+
+      const guard = new RolesAuthGuard(reflector, mockPerfisRepository);
+
+      await guard.checkRoles(mockContextSemRoles({ userId: 'u1', perfilId: 'perfil-admin-id' }));
+      await guard.checkRoles(mockContextSemRoles({ userId: 'u1', perfilId: 'perfil-admin-id' }));
+      await guard.checkRoles(mockContextSemRoles({ userId: 'u1', perfilId: 'perfil-admin-id' }));
+
+      expect(mockPerfisRepository.findById).toHaveBeenCalledTimes(1);
+    });
+
+    it('cache expira após 30s e força nova consulta ao DB', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([Roles.ADMIN]);
+      mockPerfisRepository.findById.mockResolvedValue(mockPerfilAdmin);
+
+      const guard = new RolesAuthGuard(reflector, mockPerfisRepository);
+      const ctx = mockContextSemRoles({ userId: 'u1', perfilId: 'perfil-admin-id' });
+
+      await guard.checkRoles(ctx);
+
+      const realNow = Date.now;
+      Date.now = jest.fn(() => realNow() + 31_000);
+      try {
+        await guard.checkRoles(ctx);
+      } finally {
+        Date.now = realNow;
+      }
+
+      expect(mockPerfisRepository.findById).toHaveBeenCalledTimes(2);
+    });
+
+    it('cache de um perfil não vaza para outro (ids distintos = entradas distintas)', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([Roles.ADMIN]);
+      mockPerfisRepository.findById
+        .mockResolvedValueOnce(mockPerfilAdmin)
+        .mockResolvedValueOnce(mockPerfilUsuario);
+
+      const guard = new RolesAuthGuard(reflector, mockPerfisRepository);
+
+      await guard.checkRoles(
+        mockContextSemRoles({ userId: 'u1', perfilId: 'perfil-admin-id' }),
+      );
+      await expect(
+        guard.checkRoles(
+          mockContextSemRoles({ userId: 'u2', perfilId: 'perfil-usuario-id' }),
+        ),
+      ).rejects.toThrow('Acesso insuficiente');
+
+      expect(mockPerfisRepository.findById).toHaveBeenCalledTimes(2);
+    });
+
+    it('perfil soft-deletado (deletedAt != null) não entra no cache', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([Roles.ADMIN]);
+      mockPerfisRepository.findById.mockResolvedValue(mockPerfilDeletado);
+
+      const guard = new RolesAuthGuard(reflector, mockPerfisRepository);
+      const ctx = mockContextSemRoles({ userId: 'u1', perfilId: 'perfil-deletado-id' });
+
+      await expect(guard.checkRoles(ctx)).rejects.toThrow(
+        'Perfil não encontrado ou inativo',
+      );
+      await expect(guard.checkRoles(ctx)).rejects.toThrow(
+        'Perfil não encontrado ou inativo',
+      );
+      expect(mockPerfisRepository.findById).toHaveBeenCalledTimes(2);
     });
   });
 });

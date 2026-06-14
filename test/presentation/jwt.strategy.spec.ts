@@ -65,6 +65,7 @@ describe('JwtStrategy', () => {
       const payload: JwtPayload = {
         sub: 'user-123',
         perfilId: 'perfil-1',
+        jti: 'access-jti-1',
         iat: Date.now(),
         exp: Date.now() + 3600,
       };
@@ -91,6 +92,7 @@ describe('JwtStrategy', () => {
       const payload: JwtPayload = {
         sub: 'user-123',
         perfilId: null,
+        jti: 'access-jti-1',
         iat: Date.now(),
         exp: Date.now() + 3600,
       };
@@ -113,6 +115,7 @@ describe('JwtStrategy', () => {
       const payload: JwtPayload = {
         sub: 'user-123',
         perfilId: null,
+        jti: 'access-jti-1',
         iat: Date.now(),
         exp: Date.now() + 3600,
       };
@@ -126,10 +129,11 @@ describe('JwtStrategy', () => {
       const payload: JwtPayload = {
         sub: 'user-123',
         perfilId: 'perfil-1',
+        jti: 'revoked-jti',
         iat: Date.now(),
         exp: Date.now() + 3600,
       };
-      mockTokenBlacklist.isRevoked.mockReturnValue(true);
+      mockTokenBlacklist.isRevoked.mockResolvedValue(true);
 
       await expect(strategy.validate(mockReq, payload)).rejects.toThrow(UnauthorizedException);
       await expect(strategy.validate(mockReq, payload)).rejects.toThrow('Token revogado');
@@ -140,11 +144,12 @@ describe('JwtStrategy', () => {
       const payload: JwtPayload = {
         sub: 'user-123',
         perfilId: null,
+        jti: 'access-jti-1',
         iat: Date.now(),
         exp: Date.now() + 3600,
       };
       const reqSemHeader = { headers: {} } as any;
-      mockTokenBlacklist.isRevoked.mockReturnValue(false);
+      mockTokenBlacklist.isRevoked.mockResolvedValue(false);
       const mockUsuario = {
         id: 'user-123',
         nome: 'Test',

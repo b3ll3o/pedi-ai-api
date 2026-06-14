@@ -55,19 +55,19 @@ describe('PerfisRepositoryImpl', () => {
 
   describe('findById', () => {
     it('deve retornar perfil quando encontrado', async () => {
-      mockPrisma.perfil.findUnique.mockResolvedValue(mockPerfil);
+      mockPrisma.perfil.findFirst.mockResolvedValue(mockPerfil);
 
       const resultado = await repository.findById('uuid-perfil-test');
 
       expect(resultado).toEqual(mockPerfil);
-      expect(mockPrisma.perfil.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.perfil.findFirst).toHaveBeenCalledWith({
         where: { id: 'uuid-perfil-test', deletedAt: null },
         include: { permissoes: true },
       });
     });
 
     it('deve retornar null quando perfil nao encontrado', async () => {
-      mockPrisma.perfil.findUnique.mockResolvedValue(null);
+      mockPrisma.perfil.findFirst.mockResolvedValue(null);
 
       const resultado = await repository.findById('uuid-invalido');
 
@@ -77,18 +77,18 @@ describe('PerfisRepositoryImpl', () => {
 
   describe('findByNome', () => {
     it('deve retornar perfil quando encontrado', async () => {
-      mockPrisma.perfil.findUnique.mockResolvedValue(mockPerfil);
+      mockPrisma.perfil.findFirst.mockResolvedValue(mockPerfil);
 
       const resultado = await repository.findByNome('Perfil Teste');
 
       expect(resultado).toEqual(mockPerfil);
-      expect(mockPrisma.perfil.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.perfil.findFirst).toHaveBeenCalledWith({
         where: { nome: 'Perfil Teste', deletedAt: null },
       });
     });
 
     it('deve retornar null quando nome nao encontrado', async () => {
-      mockPrisma.perfil.findUnique.mockResolvedValue(null);
+      mockPrisma.perfil.findFirst.mockResolvedValue(null);
 
       const resultado = await repository.findByNome('Nome Inexistente');
 
@@ -139,7 +139,7 @@ describe('PerfisRepositoryImpl', () => {
   });
 
   describe('update', () => {
-    it('deve atualizar perfil com dados fornecidos', async () => {
+    it('deve atualizar perfil com dados fornecidos (single query, sem pre-check)', async () => {
       const updateData = { nome: 'Nome Atualizado' };
       const perfilAtualizado = { ...mockPerfil, ...updateData };
       mockPrisma.perfil.update.mockResolvedValue(perfilAtualizado);
@@ -148,10 +148,24 @@ describe('PerfisRepositoryImpl', () => {
 
       expect(resultado).toEqual(perfilAtualizado);
       expect(mockPrisma.perfil.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-perfil-test', deletedAt: null },
+        where: { id: 'uuid-perfil-test' },
         data: updateData,
         include: { permissoes: true },
       });
+      // Sem pre-check: o use-case já fez findById. P2025 vira 404 via
+      // handlePrismaError no caller.
+      expect(mockPrisma.perfil.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('deve propagar P2025 do update (NotFoundException vem do handlePrismaError no caller)', async () => {
+      const { Prisma } = await import('@prisma/client');
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: 'test',
+      });
+      mockPrisma.perfil.update.mockRejectedValue(p2025);
+
+      await expect(repository.update('uuid-invalido', { nome: 'X' })).rejects.toBe(p2025);
     });
   });
 
@@ -169,7 +183,7 @@ describe('PerfisRepositoryImpl', () => {
   });
 
   describe('associarPermissoes', () => {
-    it('deve associar permissoes ao perfil', async () => {
+    it('deve associar permissoes ao perfil (single query, sem pre-check)', async () => {
       const permissoesIds = ['uuid-permissao-1', 'uuid-permissao-2'];
       const perfilComPermissoes = { ...mockPerfil, permissoes: [mockPermissao] };
       mockPrisma.perfil.update.mockResolvedValue(perfilComPermissoes);
@@ -178,7 +192,7 @@ describe('PerfisRepositoryImpl', () => {
 
       expect(resultado).toEqual(perfilComPermissoes);
       expect(mockPrisma.perfil.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-perfil-test', deletedAt: null },
+        where: { id: 'uuid-perfil-test' },
         data: {
           permissoes: {
             set: permissoesIds.map((id) => ({ id })),
@@ -186,6 +200,22 @@ describe('PerfisRepositoryImpl', () => {
         },
         include: { permissoes: true },
       });
+      // Sem pre-check: o use-case já fez findById. P2025 vira 404 via
+      // handlePrismaError no caller.
+      expect(mockPrisma.perfil.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('deve propagar P2025 do associarPermissoes (NotFoundException vem do handlePrismaError no caller)', async () => {
+      const { Prisma } = await import('@prisma/client');
+      const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: 'test',
+      });
+      mockPrisma.perfil.update.mockRejectedValue(p2025);
+
+      await expect(
+        repository.associarPermissoes('uuid-invalido', ['uuid-permissao-1']),
+      ).rejects.toBe(p2025);
     });
   });
 

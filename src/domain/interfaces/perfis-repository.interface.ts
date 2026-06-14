@@ -7,6 +7,7 @@ export interface IPerfisRepository {
   findById(id: string): Promise<Perfil | null>;
   findByNome(nome: string): Promise<Perfil | null>;
   findAll(params?: { skip?: number; take?: number }): Promise<Perfil[]>;
+  count(): Promise<number>;
   create(data: CriarPerfilParams): Promise<Perfil>;
   update(id: string, data: AtualizarPerfilParams): Promise<Perfil>;
   softDelete(id: string): Promise<void>;
