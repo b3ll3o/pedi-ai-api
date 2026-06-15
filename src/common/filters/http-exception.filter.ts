@@ -24,6 +24,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    // Logar qualquer exceção antes do branching: para 4xx ajuda a entender
+    // qual validação/guarda disparou, e para 5xx garante que o stack
+    // sempre vai pro log (sem isso, exceções Prisma não tratadas ecoam
+    // dados sensíveis ao cliente mas nada fica registrado server-side).
+    this.logger.error(
+      `${request.method} ${request.url} | type=${exception?.constructor?.name} | message=${exception instanceof Error ? exception.message : String(exception)}`,
+      exception instanceof Error ? exception.stack : 'no-stack',
+    );
+
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
