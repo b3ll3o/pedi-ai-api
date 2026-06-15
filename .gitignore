@@ -43,3 +43,4 @@ openspec/
 *.sqlite
 *.sqlite3
 /generated/prisma
+tsconfig.tsbuildinfo
